@@ -24,20 +24,21 @@ WINDOW_SIZE = 30
 def run_train_temperature(data_root_path, model_root_path, outputs_temperature, scaler_temperature):
     data = pd.read_csv(os.path.join(data_root_path, 'TA_data.csv'))
 
-    train(model_root_path, data, outputs_temperature, scaler_temperature, "temperature")
+    return train(model_root_path, data, outputs_temperature, scaler_temperature, "temperature")
 
 def run_train_PM(data_root_path, model_root_path, outputs_PM, scaler_PM):
     data = pd.read_csv(os.path.join(data_root_path, 'PM10_data.csv'))
 
-    train(model_root_path, data, outputs_PM, scaler_PM, "PM")
+    return train(model_root_path, data, outputs_PM, scaler_PM, "PM")
 
 def run_train(data_root_path, model_root_path):
 
     scaler_temperature, scaler_PM = get_scalers(data_root_path)
     outputs_temperature, outputs_PM = get_outputs()
 
-    run_train_temperature(data_root_path, model_root_path, outputs_temperature, scaler_temperature)
-    run_train_PM(data_root_path, model_root_path, outputs_PM, scaler_PM)
+    val_loss_temperature = run_train_temperature(data_root_path, model_root_path, outputs_temperature, scaler_temperature)
+    val_loss_PM = run_train_PM(data_root_path, model_root_path, outputs_PM, scaler_PM)
+    return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'
 
 def run_inference_temperature(data_root_path, model_root_path, model, scaler, outputs, device):
     fake_test_data = np.random.normal(loc=15, scale=3, size=(WINDOW_SIZE, len(outputs)))
@@ -75,7 +76,8 @@ def main(run_mode, data_root_path, model_root_path):
     load_dotenv()
 
     if run_mode == "train":
-        run_train(data_root_path, model_root_path)
+        val_loss = run_train(data_root_path, model_root_path)
+        print(val_loss)
     elif run_mode == "inference":
         temperature_results, PM_results = run_inference(data_root_path, model_root_path)
         print(temperature_results, PM_results)
