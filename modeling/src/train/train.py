@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import boto3
 from botocore.exceptions import NoCredentialsError
-from model.lstm import MultiOutputLSTM
+from modeling.src.model.lstm import MultiOutputLSTM
     
 def model_save(model, model_root_path, model_name):
     model_path = os.path.join(model_root_path, f"lstm_{model_name}.pth")
