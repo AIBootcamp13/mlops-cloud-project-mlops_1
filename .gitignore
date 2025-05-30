@@ -175,4 +175,8 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
+# 데이터 제외
+datapipeline/data/raw/
+datapipeline/data/processed/
+datapipeline/notebooks/
 *.csv
