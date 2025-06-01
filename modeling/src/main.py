@@ -5,7 +5,6 @@ sys.path.append(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-
 from dotenv import load_dotenv
 
 import pandas as pd
@@ -20,7 +19,7 @@ WINDOW_SIZE = 30
 
 def run_train(data_root_path, model_root_path):
     
-    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path, model_name="")
+    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path)
     _, val_loss_PM = run_pm_train(data_root_path, model_root_path)
 
     return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'

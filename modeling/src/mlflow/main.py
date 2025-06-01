@@ -36,8 +36,8 @@ def run_mlflow(run_name, model_name):
     with mlflow.start_run(run_name=run_name):
         mlflow.log_params(params)
 
-        data_root_path = os.path.join(project_path, '../mlops_data')
-        model_root_path = os.path.join(project_path, '../models')
+        data_root_path = os.path.join(project_path, 'data')
+        model_root_path = os.path.join(project_path, 'models')
         
         if run_name == "temperature":
             model, val_loss = run_temperature_train(data_root_path, model_root_path, **params)

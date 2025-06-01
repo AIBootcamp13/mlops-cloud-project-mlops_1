@@ -177,3 +177,5 @@ pyrightconfig.json
 # MLflow artifacts and runs
 mlartifacts/
 mlruns/
+models/
+data/
