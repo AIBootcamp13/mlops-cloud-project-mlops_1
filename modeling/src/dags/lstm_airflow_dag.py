@@ -15,7 +15,7 @@ from modeling.src.train.train import run_temperature_train
 
 default_args = {
     'owner': 'lmw',
-    'depends_on': False,
+    'depends_on_past': False,
     'start_date': datetime(2025, 5, 1),
     'email_on_failure': False,
     'email_on_retry': False,
@@ -31,7 +31,7 @@ dag = DAG(
 )
 
 def preprocessing_data(**kwargs):
-    data = pd.read_csv(os.path.join(project_path, '../mlops_data/TA_data.csv'))
+    data = pd.read_csv(os.path.join(project_path, 'data/TA_data.csv'))
     
     ti = kwargs['ti']
     ti.xcom_push(key='data', value=data.to_json())
@@ -40,8 +40,8 @@ def train_model(model_name, **kwargs):
     ti = kwargs['ti']
     data = pd.read_json(ti.xcom_pull(key='data', task_ids='preprocessing_data'))
 
-    model_root_path = os.path.join(project_path, '../models/tmp')
-    data_root_path = os.path.join(project_path, '../mlops_data')
+    model_root_path = os.path.join(project_path, 'models/tmp')
+    data_root_path = os.path.join(project_path, 'data')
 
     _, val_loss = run_temperature_train(data_root_path, model_root_path, model_name)
 
@@ -57,8 +57,8 @@ def select_best_model(**kwargs):
     else:
         best_model = 'multi_output_lstm'
 
-    shutil.copy2(os.path.join(project_path, '../models/tmp', f"{best_model}.pth"), os.path.join(project_path, '../models', f"{best_model}.pth"))
-    shutil.rmtree(os.path.join(project_path, '../models/tmp'))
+    shutil.copy2(os.path.join(project_path, 'models/tmp', f"{best_model}.pth"), os.path.join(project_path, 'models', f"{best_model}.pth"))
+    shutil.rmtree(os.path.join(project_path, 'models/tmp'))
     
     print(best_model)
     return best_model
@@ -73,20 +73,17 @@ with dag:
         task_id='train_multi_output_lstm',
         python_callable=train_model,
         op_kwargs={'model_name': 'multi_output_lstm'},
-        provide_context=True,
     )
 
     t3 = PythonOperator(
         task_id='train_multi_output_stacked_lstm',
         python_callable=train_model,
         op_kwargs={'model_name': 'multi_output_stacked_lstm'},
-        provide_context=True,
     )
 
     t4 = PythonOperator(
         task_id='select_best_model',
         python_callable=select_best_model,
-        provide_context=True,
     )
 
     t1 >> [t2, t3] >> t4
