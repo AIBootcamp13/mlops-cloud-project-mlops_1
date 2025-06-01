@@ -11,11 +11,7 @@ from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import pandas as pd
 
-from modeling.src.utils.constant import Models
-from modeling.src.inference.inference import (
-    init_model, inference, temperature_to_df, PM_to_df, get_scalers, get_outputs
-)
-from modeling.src.train.train import train_airflow, model_save_airflow
+from modeling.src.train.train import run_temperature_train
 
 default_args = {
     'owner': 'lmw',
@@ -46,14 +42,10 @@ def train_model(model_name, **kwargs):
 
     model_root_path = os.path.join(project_path, '../models/tmp')
     data_root_path = os.path.join(project_path, '../mlops_data')
-    outputs_temperature, outputs_PM = get_outputs()
-    scaler_temperature, scaler_PM = get_scalers(data_root_path)
 
-    model, val_loss = train_airflow(data, outputs_temperature, scaler_temperature, model_name)
+    _, val_loss = run_temperature_train(data_root_path, model_root_path, model_name)
 
-    model_save_airflow(model, model_root_path, model_name)
     ti.xcom_push(key=f'val_loss_{model_name}', value=val_loss)
-
 
 def select_best_model(**kwargs):
     ti = kwargs['ti']
