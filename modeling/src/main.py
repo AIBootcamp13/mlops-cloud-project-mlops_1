@@ -20,7 +20,7 @@ WINDOW_SIZE = 30
 
 def run_train(data_root_path, model_root_path):
     
-    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path)
+    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path, model_name="")
     _, val_loss_PM = run_pm_train(data_root_path, model_root_path)
 
     return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'
