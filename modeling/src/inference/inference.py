@@ -1,69 +1,23 @@
 import os
-import sys
 
-import pandas as pd
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from sklearn.preprocessing import MinMaxScaler
-
+import pandas as pd
+import numpy as np
 
 from modeling.src.model.lstm import MultiOutputLSTM
-from modeling.src.postprocess.postprocess import write_db, read_db
+from modeling.src.utils.utils import get_outputs, get_scaler
+from modeling.src.utils.constant import Models
 
-def temperature_to_df(results, outputs):
-    return pd.DataFrame(
-        data=[[results[outputs[0]], results[outputs[1]], results[outputs[2]]]],
-        columns=outputs
-    )
+def init_model(model_path, model_name, outputs):
+    checkpoint = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
 
-def PM_to_df(results, outputs):
-    return pd.DataFrame(
-        data=[[results[outputs[0]], results[outputs[1]], results[outputs[2]]]],
-        columns=outputs
-    )
-
-def get_outputs():
-    outputs_temperature = ["TA_AVG", "TA_MAX", "TA_MIN"]
-    outputs_PM = ["PM10_MIN", "PM10_MAX", "PM10_AVG"]
-    return outputs_temperature, outputs_PM
-
-def get_scaler_temperature(data_root_path, outputs):
-    df = pd.read_csv(os.path.join(data_root_path, 'TA_data.csv'))
-    features = df[outputs].values
-    scaler = MinMaxScaler()
-    scaler.fit_transform(features)
-    return scaler
-
-def get_scaler_PM(data_root_path, outputs):
-    df = pd.read_csv(os.path.join(data_root_path, 'PM10_data.csv'))
-    features = df[outputs].values
-    scaler = MinMaxScaler()
-    scaler.fit_transform(features)
-    return scaler
-
-def get_scalers(data_root_path):
-    outputs_temperature, outputs_PM = get_outputs()
-    return get_scaler_temperature(data_root_path, outputs_temperature), get_scaler_PM(data_root_path, outputs_PM)
-
-def init_model(model_root_path):
-    outputs_temperature, outputs_PM = get_outputs()
+    Models.validation(model_name)
+    model_class = Models[model_name.upper()].value
     
-    model_temperature_path = os.path.join(model_root_path, "lstm_temperature.pth")
+    model = model_class(outputs)
+    model.load_state_dict(checkpoint)
 
-    model_temperature_checkpoint = torch.load(model_temperature_path, map_location=torch.device('cpu'), weights_only=True)
-
-    model_temperature = MultiOutputLSTM(outputs_temperature)
-    model_temperature.load_state_dict(model_temperature_checkpoint)
-
-    model_PM_path = os.path.join(model_root_path, "lstm_PM.pth")
-
-    model_PM_checkpoint = torch.load(model_PM_path, map_location=torch.device('cpu'), weights_only=True)
-
-    model_PM = MultiOutputLSTM(outputs_PM)
-    model_PM.load_state_dict(model_PM_checkpoint)
-
-    return model_temperature, model_PM
+    return model
 
 def inference(model, data, scaler, outputs, device):
     model.to(device)
@@ -78,3 +32,50 @@ def inference(model, data, scaler, outputs, device):
         outputs[0]: result[0][0], 
         outputs[1]: result[0][1], 
         outputs[2]: result[0][2]}
+
+
+def run_inference_temperature(data_root_path, model_root_path, batch_size=64):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+
+    window_size = 30
+
+    data_path = os.path.join(data_root_path, 'TA_data.csv')
+    model_path = os.path.join(model_root_path, 'lstm_temperature.pth')
+
+    outputs_temperature, outputs_PM = get_outputs()
+    scaler = get_scaler(data_path, outputs_temperature)
+    
+    model = init_model(model_path, 'multi_output_lstm', outputs_temperature)
+
+    fake_test_data = np.random.normal(loc=15, scale=3, size=(window_size, len(outputs_temperature)))
+
+    results = inference(model, fake_test_data, scaler, outputs_temperature, device)    
+    # temperature_df = temperature_to_df(results, outputs)
+    # print(temperature_df)
+
+    # write_db(temperature_df, "mlops", "temperature")
+    return results
+
+def run_inference_PM(data_root_path, model_root_path, batch_size=64):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+
+    window_size = 30
+
+    data_path = os.path.join(data_root_path, 'PM10_data.csv')
+    model_path = os.path.join(model_root_path, 'lstm_PM.pth')
+
+    outputs_temperature, outputs_PM = get_outputs()
+    scaler = get_scaler(data_path, outputs_PM)
+    
+    model = init_model(model_path, 'multi_output_lstm', outputs_PM)
+
+    fake_test_data = np.random.normal(loc=15, scale=3, size=(window_size, len(outputs_PM)))
+
+    results = inference(model, fake_test_data, scaler, outputs_PM, device)    
+    # temperature_df = temperature_to_df(results, outputs)
+    # print(temperature_df)
+
+    # write_db(temperature_df, "mlops", "temperature")
+    return results
