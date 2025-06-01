@@ -6,10 +6,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
 import boto3
 from botocore.exceptions import NoCredentialsError
-from modeling.src.model.lstm import MultiOutputLSTM
 from modeling.src.utils.constant import Models
 from abc import ABC, abstractmethod
 
