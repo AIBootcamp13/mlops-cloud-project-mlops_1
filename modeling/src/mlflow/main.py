@@ -16,7 +16,7 @@ from mlflow.models.signature import infer_signature
 from modeling.src.train.train import run_temperature_train, run_pm_train
 
 
-mlflow_url = "http://127.0.0.1:5000"
+mlflow_url = os.getenv("MLFLOW_HOST")
 mlflow.set_tracking_uri(mlflow_url)
 mlflow.set_experiment("WeatherExperiment")
 
