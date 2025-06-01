@@ -14,30 +14,19 @@ import torch
 import fire
 
 from modeling.src.inference.inference import (
-    init_model, inference, temperature_to_df, PM_to_df, get_scalers, get_outputs
+    init_model, inference, get_outputs
 )
-from modeling.src.train.train import train
+from modeling.src.train.train import run_temperature_train, run_pm_train
 from modeling.src.postprocess.postprocess import write_db, read_db
+from modeling.src.utils.utils import get_outputs, get_scalers, temperature_to_df, PM_to_df
 
 WINDOW_SIZE = 30
 
-def run_train_temperature(data_root_path, model_root_path, outputs_temperature, scaler_temperature):
-    data = pd.read_csv(os.path.join(data_root_path, 'TA_data.csv'))
-
-    return train(model_root_path, data, outputs_temperature, scaler_temperature, "temperature")
-
-def run_train_PM(data_root_path, model_root_path, outputs_PM, scaler_PM):
-    data = pd.read_csv(os.path.join(data_root_path, 'PM10_data.csv'))
-
-    return train(model_root_path, data, outputs_PM, scaler_PM, "PM")
-
 def run_train(data_root_path, model_root_path):
+    
+    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path)
+    _, val_loss_PM = run_pm_train(data_root_path, model_root_path)
 
-    scaler_temperature, scaler_PM = get_scalers(data_root_path)
-    outputs_temperature, outputs_PM = get_outputs()
-
-    val_loss_temperature = run_train_temperature(data_root_path, model_root_path, outputs_temperature, scaler_temperature)
-    val_loss_PM = run_train_PM(data_root_path, model_root_path, outputs_PM, scaler_PM)
     return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'
 
 def run_inference_temperature(data_root_path, model_root_path, model, scaler, outputs, device):
