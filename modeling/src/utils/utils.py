@@ -29,5 +29,5 @@ def PM_to_df(results, outputs):
 
 CFG = {
     'WINDOW_SIZE': 7,
-    'EPOCHS': 30,
+    'EPOCHS': 5,
 }
