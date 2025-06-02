@@ -3,8 +3,10 @@ from textwrap import dedent
 import pendulum
 
 from airflow import DAG
-from airflow.providers.standard.operators.python import PythonVirtualenvOperator
+from airflow.providers.standard.operators.python import PythonVirtualenvOperator, ShortCircuitOperator
+from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
 from tasks.inference import inference
+from tasks.is_model_drift import is_model_drift
 
 with DAG(
     "inference",
@@ -32,7 +34,17 @@ with DAG(
         python_version="3.10"
     )
 
-    inference_task
+    is_model_drift_task = ShortCircuitOperator(
+        task_id="is_model_drift_task",
+        python_callable=is_model_drift
+    )
+
+    train_trigger_task = TriggerDagRunOperator(
+        task_id="train_trigger_task",
+        trigger_dag_id="train"
+    )
+
+    inference_task >> is_model_drift_task >> train_trigger_task
 
 if __name__ == "__main__":
     inference()
