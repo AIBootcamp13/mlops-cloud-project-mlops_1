@@ -43,7 +43,7 @@ def train_model(model_name, **kwargs):
     model_root_path = os.path.join(project_path, 'models/tmp')
     data_root_path = os.path.join(project_path, 'data')
 
-    _, val_loss = run_temperature_train(data_root_path, model_root_path, model_name)
+    _, val_loss = run_temperature_train(data_root_path, model_root_path, 64, model_name)
 
     ti.xcom_push(key=f'val_loss_{model_name}', value=val_loss)
 

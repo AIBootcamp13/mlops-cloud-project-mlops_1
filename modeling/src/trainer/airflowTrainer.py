@@ -1,8 +1,8 @@
 from modeling.src.trainer.trainer import Trainer
 
 class AirflowTrainer(Trainer):
-    def __init__(self, model_name, epochs, outputs, scaler, window_size):
-        super().__init__(model_name, epochs, outputs, scaler, window_size)
+    def __init__(self, model_name, epochs, batch_size, outputs, scaler, window_size):
+        super().__init__(model_name, epochs, batch_size, outputs, scaler, window_size)
         print('Airflow Trainer')
     
     def split_data(self, data):
