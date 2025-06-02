@@ -1,14 +1,22 @@
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-import torch
-import torch.nn as nn
-import os
-
 def inference():
-    generation1 = pd.read_csv('../../../data/inference/Plant_1_Generation_Data.csv')
-    weather1 = pd.read_csv('../../../data/inference/Plant_1_Weather_Sensor_Data.csv')
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from sklearn.preprocessing import MinMaxScaler
+    import torch
+    import torch.nn as nn
+    import os
+    import sys
+    import pytz
+    from datetime import datetime
+
+    data_root_path = "dags/data"
+
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
+
+    generation1 = pd.read_csv(os.path.join(data_root_path, 'inference', 'Plant_1_Generation_Data.csv'))
+    weather1 = pd.read_csv(os.path.join(data_root_path, 'inference', 'Plant_1_Weather_Sensor_Data.csv'))
 
     generation1['DATE_TIME'] = pd.to_datetime(generation1['DATE_TIME'], dayfirst=True)
     weather1['DATE_TIME'] = pd.to_datetime(weather1['DATE_TIME'], dayfirst=False)
@@ -54,8 +62,8 @@ def inference():
     X = X.reshape(X.shape[0], 1, X.shape[1])
     X_tensor = torch.tensor(X, dtype=torch.float32)
 
-
-    state_dict = torch.load('../../../data/outputs/train/lstm.pth', map_location=torch.device('cpu'), weights_only=True)
+    model_path = os.path.join(data_root_path, 'outputs', 'train', f'lstm.pth')
+    state_dict = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
     model = LSTMAutoencoder(seq_len=1, n_features=X.shape[2])
     model.load_state_dict(state_dict)
     model.eval()
@@ -78,8 +86,9 @@ def inference():
     anomalies = scores[scores['Anomaly'] == 1][['real AC']].rename(columns={'real AC': 'anomalies'})
     scores = scores.merge(anomalies, left_index=True, right_index=True, how='left')
 
-    os.makedirs('../../../data/outputs/inference', exist_ok=True)
-    scores[scores['Anomaly'] == 1].to_csv('../../../data/outputs/inference/anomalies.csv', index=False)
+    inference_output_dir = os.path.join(data_root_path, 'outputs', 'inference')
+    os.makedirs(inference_output_dir, exist_ok=True)
+    scores[scores['Anomaly'] == 1].to_csv(os.path.join(inference_output_dir, f'{now}_anomalies.csv'), index=False)
 
     plt.figure(figsize=(12, 6))
     plt.plot(scores['datetime'], scores['real AC'], label='AC Power', color='blue')
@@ -89,7 +98,7 @@ def inference():
     plt.ylabel("AC Power (kW)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig('../../../data/outputs/inference/Anomaly.png', dpi=300)
+    plt.savefig(os.path.join(inference_output_dir, f'{now}_Anomaly.png'), dpi=300)
     plt.close()
 
     plt.figure(figsize=(12, 6))
@@ -100,7 +109,7 @@ def inference():
     plt.ylabel("Value")
     plt.legend()
     plt.tight_layout()
-    plt.savefig('../../../data/outputs/inference/AC_power.png', dpi=300)
+    plt.savefig(os.path.join(inference_output_dir, f'{now}_AC_power.png'), dpi=300)
     plt.close()
 
 if __name__ == "__main__":

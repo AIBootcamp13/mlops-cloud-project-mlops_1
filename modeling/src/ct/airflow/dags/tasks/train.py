@@ -1,16 +1,24 @@
-import os
-import numpy as np
-import pandas as pd
-import torch
-import torch.nn as nn
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
-
 def train():
-    gen = pd.read_csv("../../../data/train/Plant_1_Generation_Data.csv")
-    weather = pd.read_csv("../../../data/train/Plant_1_Weather_Sensor_Data.csv")
+    import os
+    import sys
+    import numpy as np
+    import pandas as pd
+    import torch
+    import torch.nn as nn
+    import matplotlib.pyplot as plt
+    from datetime import datetime
+    import pytz
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.model_selection import train_test_split
+    from torch.utils.data import DataLoader, TensorDataset
+
+    data_root_path = "dags/data"
+
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
+
+    gen = pd.read_csv(os.path.join(data_root_path, "train/Plant_1_Generation_Data.csv"))
+    weather = pd.read_csv(os.path.join(data_root_path, "train/Plant_1_Weather_Sensor_Data.csv"))
 
     gen["DATE_TIME"] = pd.to_datetime(gen["DATE_TIME"], dayfirst=True)
     weather["DATE_TIME"] = pd.to_datetime(weather["DATE_TIME"])
@@ -67,7 +75,7 @@ def train():
     model = LSTMAutoencoder(seq_len=1, n_features=X_train.shape[2])
     criterion = nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    epochs = 100
+    epochs = 5
     batch_size = 10
 
     train_loader = DataLoader(TensorDataset(torch.tensor(X_train, dtype=torch.float32)), batch_size=batch_size)
@@ -97,8 +105,8 @@ def train():
 
         print(f"[Epoch {epoch+1}] Train Loss: {train_losses[-1]:.4f} | Val Loss: {val_losses[-1]:.4f}")
 
-    os.makedirs("../../../data/outputs/train", exist_ok=True)
-    torch.save(model.state_dict(), "../../../data/outputs/train/lstm.pth")
+    os.makedirs(os.path.join(data_root_path, 'outputs/train'), exist_ok=True)
+    torch.save(model.state_dict(), os.path.join(data_root_path, f'outputs/train/lstm.pth'))
 
     plt.figure(figsize=(8, 5))
     plt.plot(train_losses, label="Train Loss")
@@ -109,12 +117,12 @@ def train():
     plt.legend()
     plt.grid()
     plt.tight_layout()
-    plt.savefig("../../../data/outputs/train/Error_loss.png")
+    plt.savefig(os.path.join(data_root_path, f"outputs/train/{now}_Error_loss.png"))
     plt.close()
 
     with torch.no_grad():
         X_tensor = torch.tensor(X_train, dtype=torch.float32)
-        pred = model(X_tensor).numpy()
+        pred = model(X_tensor).detach().cpu().numpy()
     pred = pred[:, -1, :]
     X_pred_inv = scaler.inverse_transform(pred)
     pred_df = pd.DataFrame(X_pred_inv, columns=train_df.columns)
@@ -130,12 +138,12 @@ def train():
     plt.xlabel("MAE (AC_POWER)")
     plt.ylabel("Frequency")
     plt.tight_layout()
-    plt.savefig("../../../data/outputs/train/Error_distribution.png")
+    plt.savefig(os.path.join(data_root_path, f"outputs/train/{now}_Error_distribution.png"))
     plt.close()
 
     with torch.no_grad():
         X_tensor = torch.tensor(X_test, dtype=torch.float32)
-        X_pred = model(X_tensor).numpy()
+        X_pred = model(X_tensor).detach().cpu().numpy()
 
     X_pred = X_pred[:, -1, :]
     X_pred_inv = scaler.inverse_transform(X_pred)
@@ -157,12 +165,12 @@ def train():
     plt.ylabel("Loss")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("../../../data/outputs/train/Threshold.png")
+    plt.savefig(os.path.join(data_root_path, f"outputs/train/{now}_Threshold.png"))
     plt.close()
 
     anomalies = scores[scores["Anomaly"] == 1][["real AC"]].rename(columns={"real AC": "anomalies"})
     scores = scores.merge(anomalies, left_index=True, right_index=True, how="left")
-    scores[scores["Anomaly"] == 1].to_csv("../../../data/outputs/train/anomalies.csv", index=False)
+    scores[scores["Anomaly"] == 1].to_csv(os.path.join(data_root_path, f"outputs/train/{now}_anomalies.csv"), index=False)
 
     plt.figure(figsize=(12, 6))
     plt.plot(scores["datetime"], scores["real AC"], label="AC Power")
@@ -172,7 +180,7 @@ def train():
     plt.ylabel("AC Power")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("../../../data/outputs/train/Anomaly.png")
+    plt.savefig(os.path.join(data_root_path, f"outputs/train/{now}_Anomaly.png"))
     plt.close()
 
 if __name__ == "__main__":
