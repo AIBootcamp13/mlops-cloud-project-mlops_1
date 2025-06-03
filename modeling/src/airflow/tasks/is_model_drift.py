@@ -9,6 +9,6 @@ def is_model_drift(project_path):
     anomalies_files.sort(key=os.path.getmtime)
     latest_anomalies_file = anomalies_files[-1]
 
-    df = pd.read_sv(latest_anomalies_file)
+    df = pd.read_csv(latest_anomalies_file)
 
     return len(df) > DRIFT_THRESHOLD
