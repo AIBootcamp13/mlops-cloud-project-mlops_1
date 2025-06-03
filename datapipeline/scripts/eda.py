@@ -62,6 +62,3 @@ def main():
     df_pm10 = preprocess_pm10(df_pm10)
     df_pm10_filtered = process_pm10_outliers(df_pm10)
     save_processed_pm10(df_pm10_filtered)
-
-if __name__ == "__main__":
-    main()

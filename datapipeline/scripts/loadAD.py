@@ -11,11 +11,25 @@ from config import PM10_RAW_FILE, PM10_PROCESSED_FILE
 # 기상청 황사 데이터 다운
 def download_pm10_data(api_key, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
     url = f"https://apihub.kma.go.kr/api/typ01/url/kma_pm10.php?tm1=200804280000&stn=108&authKey={api_key}"
-    response = requests.get(url)
-    
-    with open(save_path, 'wb') as f:
-        f.write(response.content)
+
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status() 
+
+        try:
+            result_json = response.json()
+            if "result" in result_json and result_json["result"].get("status") == 403:
+                raise ValueError(f"API 인증 오류: {result_json['result']['message']}")
+        except Exception:
+            pass
+
+        with open(save_path, 'wb') as f:
+            f.write(response.content)
+
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"API 요청 실패: {e}")
 
 # 황사 데이터 로드 및 전처리
 def preprocess_pm10_data(input_path, output_path):
