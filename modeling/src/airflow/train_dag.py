@@ -28,7 +28,7 @@ with DAG(
     catchup=False,
 ) as dag:
     train_task = PythonOperator(
-        task_id='train_trask',
+        task_id='train_task',
         python_callable=train,
         op_kwargs={'project_path': project_path},
     )

@@ -6,11 +6,16 @@ def inference(project_path):
     import pandas as pd
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
+    from datetime import datetime
+    import pytz
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
     from sklearn.preprocessing import MinMaxScaler
     from sklearn.model_selection import train_test_split
+
+    kst = pytz.timezone('Asia/Seoul')
+    now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
 
     temperature_df = pd.read_csv(os.path.join(project_path, 'data/TA_data.csv'))
     temperature_df_train = temperature_df[-365*5:-365].reset_index(drop=True)
@@ -112,13 +117,13 @@ def inference(project_path):
         ax.set_ylabel("Loss")
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(inference_output_dir, f"temperature_{column}_Threshold.png"))
+        plt.savefig(os.path.join(inference_output_dir, f"{now}_temperature_{column}_Threshold.png"))
         plt.close()
 
         cols = ['datetime'] + [col for col in scores.columns if col != 'datetime']
         scores = scores[cols]
         scores[scores["Anomaly"] == 1].to_csv(
-            os.path.join(inference_output_dir, f'temperature_{column}_anomalies.csv'),
+            os.path.join(inference_output_dir, f'{now}_temperature_{column}_anomalies.csv'),
             index=False
         )
 
@@ -137,5 +142,5 @@ def inference(project_path):
         ax.set_ylabel(column)
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(inference_output_dir, f"temperature_{column}_Anomaly.png"))
+        plt.savefig(os.path.join(inference_output_dir, f"{now}_temperature_{column}_Anomaly.png"))
         plt.close()
