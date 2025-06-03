@@ -13,6 +13,9 @@ x-airflow-common: &airflow_common
     - AIRFLOW__CORE__STORE_DAG_CODE=True
     - AIRFLOW__CORE__DAGS_FOLDER=/app/modeling/src/airflow
 
+    - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_WEB_SECRET_KEY}
+  env_file:
+    - .env
   volumes:
     - ./:/app
   working_dir: /app/modeling/src/airflow
