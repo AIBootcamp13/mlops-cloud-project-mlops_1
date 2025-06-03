@@ -10,6 +10,7 @@ from config import TA_PROCESSED_FILE, TA_MODEL_FILE, PM10_PROCESSED_FILE, PM10_M
 def load_data():
     df_ta = pd.read_csv(TA_PROCESSED_FILE, parse_dates=['date'])
     df_pm10 = pd.read_csv(PM10_PROCESSED_FILE, parse_dates=['date'])
+    
     return df_ta, df_pm10
 
 def preprocess_temperature(df_ta):
@@ -47,10 +48,22 @@ def save_processed_temperature(df_ta):
     df_ta.to_csv(TA_PROCESSED_FILE, index=False)
     
 def save_interpolated_temperature(df_ta_interpolated):
+    # 전체 파일 저장 (VSCode 용)
     df_ta_interpolated.to_csv(TA_MODEL_FILE, index=False)
+
+    # 날짜별 파일도 추가 저장 (S3 업로드용)
+    os.makedirs('./data/processed/temperature', exist_ok=True)
+    for date, group in df_ta_interpolated.groupby('date'):
+        date_str = pd.to_datetime(date).strftime('%Y-%m-%d')
+        group.to_csv(f'./data/processed/temperature/{date_str}.csv', index=False)
 
 def save_processed_pm10(df_pm10_filtered):
     df_pm10_filtered.to_csv(PM10_MODEL_FILE, index=False)
+
+    os.makedirs('./data/processed/pm10', exist_ok=True)
+    for date, group in df_pm10_filtered.groupby('date'):
+        date_str = pd.to_datetime(date).strftime('%Y-%m-%d')
+        group.to_csv(f'./data/processed/pm10/{date_str}.csv', index=False)
     
 def main():
     df_ta, df_pm10 = load_data()
