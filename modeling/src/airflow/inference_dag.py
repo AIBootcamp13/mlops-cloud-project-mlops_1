@@ -38,7 +38,7 @@ with DAG(
 
     is_model_drift_task = ShortCircuitOperator(
         task_id="is_model_drift_task",
-        python_callback=is_model_drift,
+        python_callable=is_model_drift,
         op_kwargs={'project_path': project_path},
     )
 
