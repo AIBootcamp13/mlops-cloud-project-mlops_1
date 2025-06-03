@@ -28,6 +28,7 @@ dag = DAG(
     default_args=default_args,
     description='a simple dag for lstm model training and selection',
     schedule_interval=timedelta(days=1),
+    catchup=False,
 )
 
 def preprocessing_data(**kwargs):
