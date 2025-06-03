@@ -20,6 +20,7 @@ from modeling.src.airflow.tasks.is_model_drift import is_model_drift
 with DAG(
     "anomaly_model_inference",
     default_args = {
+        'owner': 'lmw',
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(minutes=5),
