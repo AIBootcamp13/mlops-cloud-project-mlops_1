@@ -181,3 +181,4 @@ models/
 data/
 modeling/src/ct/airflow/config/
 modeling/src/ct/airflow/logs/
+*.db
