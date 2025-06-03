@@ -28,6 +28,7 @@ dag = DAG(
     default_args=default_args,
     description='a simple dag for lstm model training and selection',
     schedule_interval=timedelta(days=1),
+    catchup=False,
 )
 
 def preprocessing_data(**kwargs):
@@ -75,15 +76,16 @@ with dag:
         op_kwargs={'model_name': 'multi_output_lstm'},
     )
 
-    t3 = PythonOperator(
-        task_id='train_multi_output_stacked_lstm',
-        python_callable=train_model,
-        op_kwargs={'model_name': 'multi_output_stacked_lstm'},
-    )
+    # t3 = PythonOperator(
+    #     task_id='train_multi_output_stacked_lstm',
+    #     python_callable=train_model,
+    #     op_kwargs={'model_name': 'multi_output_stacked_lstm'},
+    # )
 
-    t4 = PythonOperator(
-        task_id='select_best_model',
-        python_callable=select_best_model,
-    )
+    # t4 = PythonOperator(
+    #     task_id='select_best_model',
+    #     python_callable=select_best_model,
+    # )
 
-    t1 >> [t2, t3] >> t4
+    # t1 >> [t2, t3] >> t4
+    t1 >> t2

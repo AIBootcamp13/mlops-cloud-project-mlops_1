@@ -28,6 +28,6 @@ def PM_to_df(results, outputs):
     )
 
 CFG = {
-    'BATCH_SIZE': 64,
-    'EPOCHS': 30,
+    'WINDOW_SIZE': 7,
+    'EPOCHS': 5,
 }

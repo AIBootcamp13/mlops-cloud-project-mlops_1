@@ -6,6 +6,7 @@ import numpy as np
 
 from modeling.src.model.lstm import MultiOutputLSTM
 from modeling.src.utils.utils import get_outputs, get_scaler
+from modeling.src.utils.utils import CFG
 from modeling.src.utils.constant import Models
 
 def init_model(model_path, model_name, outputs):
@@ -38,7 +39,7 @@ def run_inference_temperature(data_root_path, model_root_path, batch_size=64):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    window_size = 30
+    window_size = CFG['WINDOW_SIZE']
 
     data_path = os.path.join(data_root_path, 'TA_data.csv')
     model_path = os.path.join(model_root_path, 'lstm_temperature.pth')
@@ -61,7 +62,7 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
-    window_size = 30
+    window_size = CFG['WINDOW_SIZE']
 
     data_path = os.path.join(data_root_path, 'PM10_data.csv')
     model_path = os.path.join(model_root_path, 'lstm_PM.pth')

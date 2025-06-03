@@ -12,12 +12,13 @@ from modeling.src.utils.constant import Models
 from abc import ABC, abstractmethod
 
 class Trainer(ABC):
-    def __init__(self, model_name, epochs, outputs, scaler, window_size):
+    def __init__(self, model_name, epochs, batch_size, outputs, scaler, window_size):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("Using device:", self.device)
 
         self.model_name = model_name
         self.epochs = epochs
+        self.batch_size = batch_size
         self.outputs = outputs
         self.scaler = scaler
         self.window_size = window_size
@@ -72,8 +73,8 @@ class Trainer(ABC):
 
         print(f"X_train shape: {X_train_tensor.shape}, y_train shape: {y_train_tensor.shape}")
 
-        train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=64, shuffle=True)
-        val_loader = DataLoader(TensorDataset(X_val_tensor, y_val_tensor), batch_size=64)
+        train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(TensorDataset(X_val_tensor, y_val_tensor), batch_size=self.batch_size)
 
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)

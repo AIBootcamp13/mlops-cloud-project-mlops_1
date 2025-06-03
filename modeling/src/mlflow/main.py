@@ -20,9 +20,10 @@ mlflow_url = os.getenv("MLFLOW_HOST")
 mlflow.set_tracking_uri(mlflow_url)
 mlflow.set_experiment("WeatherExperiment")
 
-def run_mlflow(run_name, model_name):
+def run_mlflow(run_name, model_name, batch_size):
     params = {
-        "model_name": model_name
+        "model_name": model_name,
+        "batch_size": batch_size
     }
 
     input_example = torch.randn(64, 30, 3)
@@ -51,9 +52,12 @@ def run_mlflow(run_name, model_name):
 def main():
     run_names = ["temperature", "PM"]
     model_names = ["MULTI_OUTPUT_LSTM", "MULTI_OUTPUT_STACKED_LSTM"]
+    batch_sizes = [4, 8, 16, 32, 64]
+
     for run_name in run_names:
         for model_name in model_names:
-            run_mlflow(run_name, model_name)
+            for batch_size in batch_sizes:
+                run_mlflow(run_name, model_name, batch_size)
 
 if __name__ == "__main__":
     main()

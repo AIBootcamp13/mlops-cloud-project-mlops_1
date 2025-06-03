@@ -1,6 +1,7 @@
 FROM python:3.10-slim
 
 WORKDIR /app
+COPY .env /app
 COPY data/ /app/data/
 COPY modeling/ /app/modeling/
 COPY datapipeline/ /app/datapipeline/
@@ -23,4 +24,4 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV AIRFLOW__CORE__DAGS_FOLDER=/app/modeling/src/dags
+ENV AIRFLOW__CORE__DAGS_FOLDER=/app/modeling/src/airflow
