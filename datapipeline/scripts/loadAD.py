@@ -8,38 +8,40 @@ from io import StringIO
 from dotenv import load_dotenv
 from config import PM10_RAW_FILE, PM10_PROCESSED_FILE
 
-# 기상청 황사 데이터 다운
+STATION_ID = 108
+START_TIME = "200804280000"
+
+# 기상청 황사 데이터 다운로드
 def download_pm10_data(api_key, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-    url = f"https://apihub.kma.go.kr/api/typ01/url/kma_pm10.php?tm1=200804280000&stn=108&authKey={api_key}"
+    url = f"https://apihub.kma.go.kr/api/typ01/url/kma_pm10.php?tm1={START_TIME}&stn={STATION_ID}&authKey={api_key}"
 
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status() 
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
 
         try:
             result_json = response.json()
             if "result" in result_json and result_json["result"].get("status") == 403:
-                raise ValueError(f"API 인증 오류: {result_json['result']['message']}")
+                raise ValueError(f"API authentication error: {result_json['result']['message']}")
         except Exception:
             pass
 
         with open(save_path, 'wb') as f:
             f.write(response.content)
 
+        print(f"[DOWNLOAD] AD Data saved to {save_path}")
+
     except requests.exceptions.RequestException as e:
-        raise ValueError(f"API 요청 실패: {e}")
+        raise ValueError(f"API request failed: {e}")
 
 # 황사 데이터 로드 및 전처리
 def preprocess_pm10_data(input_path, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
+
     with open(input_path, 'r', encoding='cp949') as f:
-        lines = f.readlines()
-    data_lines = [line.strip() for line in lines if not line.startswith('#') and line.strip()]
-    data_str = '\n'.join(data_lines)
-    
+        data_str = ''.join(line for line in f if not line.startswith('#') and line.strip())
+
     df = pd.read_csv(StringIO(data_str), sep=',', header=None, skipinitialspace=True, on_bad_lines='skip', engine='python')
 
     if df.shape[1] >= 3:
@@ -50,18 +52,16 @@ def preprocess_pm10_data(input_path, output_path):
 
     df_ad['timestamp'] = df_ad['timestamp'].astype(str).str.extract(r'(\d{12})')[0]
     df_ad['date'] = pd.to_datetime(df_ad['timestamp'], format='%Y%m%d%H%M', errors='coerce').dt.date
-    df_ad['PM10'] = pd.to_numeric(df_ad['PM10'], errors='coerce')
+    df_ad['PM10'] = pd.to_numeric(df_ad['PM10'], errors='coerce', downcast='float')
 
-    # 일별 집계
-    df_pm10 = df_ad.groupby('date')['PM10'].agg(['min', 'max', 'mean']).reset_index()
+    df_pm10 = df_ad.groupby('date', as_index=False)['PM10'].agg(['min', 'max', 'mean'])
     df_pm10.columns = ['date', 'PM10_MIN', 'PM10_MAX', 'PM10_AVG']
     df_pm10 = df_pm10.round(1)
     df_pm10['date'] = pd.to_datetime(df_pm10['date'].astype(str))
 
     df_pm10.to_csv(output_path, index=False, encoding='utf-8-sig')
-    
-    print(f"Save completed: {output_path}")
-    
+    print(f"[SAVE] Processed PM10 data saved to {output_path}")
+
     return df_pm10
 
 def main():

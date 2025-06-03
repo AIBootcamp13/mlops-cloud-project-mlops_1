@@ -24,7 +24,6 @@ def get_existing_s3_keys(s3, bucket, prefix):
     keys = set()
     continuation_token = None
 
-    # S3에 있는 전체 파일 키 목록을 한 번에 가져오기 (기존 head_object 반복 호출 대신)
     while True:
         if continuation_token:
             response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, ContinuationToken=continuation_token)
@@ -33,7 +32,7 @@ def get_existing_s3_keys(s3, bucket, prefix):
 
         contents = response.get('Contents', [])
         for obj in contents:
-            keys.add(obj['Key'])  # S3 키만 저장
+            keys.add(obj['Key'])
 
         if response.get('IsTruncated'):
             continuation_token = response['NextContinuationToken']
@@ -45,48 +44,47 @@ def get_existing_s3_keys(s3, bucket, prefix):
 def upload_to_s3(s3, local_file_path, s3_bucket, s3_key):
     try:
         s3.upload_file(local_file_path, s3_bucket, s3_key)
-        print(f"[UPLOAD] S3 upload completed: s3://{s3_bucket}/{s3_key}")
     except Exception as e:
         print(f"[ERROR] Failed to upload {local_file_path}: {e}")
 
 def main():
-    print("Loading temperature data...")
-    loadTemp.main()
+    try:
+        print("Loading temperature data...")
+        loadTemp.main()
 
-    print("Loading PM10 data...")
-    loadAD.main()
+        print("Loading PM10 data...")
+        loadAD.main()
 
-    print("Running EDA and saving results...")
-    eda.main()
+        print("Running EDA and saving results...")
+        eda.main()
 
-    s3_bucket = 'mlops-pipeline-jeb'
+        s3_bucket = 'mlops-pipeline-jeb'
 
-    print("Fetching existing S3 keys...")
-    temp_s3_keys = get_existing_s3_keys(s3, s3_bucket, 'results/temperature')
-    pm10_s3_keys = get_existing_s3_keys(s3, s3_bucket, 'results/pm10')
+        temp_s3_keys = get_existing_s3_keys(s3, s3_bucket, 'results/temperature')
+        pm10_s3_keys = get_existing_s3_keys(s3, s3_bucket, 'results/pm10')
 
-    temp_files = glob.glob('./data/processed/temperature/*.csv')
-    for file in temp_files:
-        filename = os.path.basename(file)
-        date_month = os.path.splitext(filename)[0][:7]
-        s3_key = f"results/temperature/date={date_month}/{filename}"
+        temp_files = glob.glob('./data/processed/temperature/*.csv')
+        for file in temp_files:
+            filename = os.path.basename(file)
+            date_month = os.path.splitext(filename)[0][:7]
+            s3_key = f"results/temperature/date={date_month}/{filename}"
 
-        if s3_key not in temp_s3_keys:
-            upload_to_s3(s3, file, s3_bucket, s3_key)
-        else:
-            print(f"[SKIP] Already uploaded: s3://{s3_bucket}/{s3_key}")
+            if s3_key not in temp_s3_keys:
+                upload_to_s3(s3, file, s3_bucket, s3_key)
 
-    pm10_files = glob.glob('./data/processed/pm10/*.csv')
-    for file in pm10_files:
-        filename = os.path.basename(file)
-        date_month = filename.replace('.csv', '')[:7]
-        s3_key = f"results/pm10/date={date_month}/{filename}"
+        pm10_files = glob.glob('./data/processed/pm10/*.csv')
+        for file in pm10_files:
+            filename = os.path.basename(file)
+            date_month = filename.replace('.csv', '')[:7]
+            s3_key = f"results/pm10/date={date_month}/{filename}"
 
-        if s3_key not in pm10_s3_keys:
-            upload_to_s3(s3, file, s3_bucket, s3_key)
-        else:
-            print(f"[SKIP] Already uploaded: s3://{s3_bucket}/{s3_key}")
+            if s3_key not in pm10_s3_keys:
+                upload_to_s3(s3, file, s3_bucket, s3_key)
 
+    except Exception as e:
+        print(f"[ERROR] Pipeline failed: {e}")
+        sys.exit(1)
+    
     print("Data processing and S3 upload completed successfully!")
 
 if __name__ == "__main__":
