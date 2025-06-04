@@ -46,7 +46,7 @@ def download_data_from_s3(data_root_path, data_name):
 
         if 'Contents' not in response:
             break
-
+        count = 0
         for obj in response['Contents']:
             key = obj['Key']
             if key.endswith('.csv'):
@@ -54,6 +54,7 @@ def download_data_from_s3(data_root_path, data_name):
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
 
                 try:
+                    count += 1
                     s3.download_file(bucket_name, key, local_path)
                     print(f"Downloading: s3://{bucket_name}/{key} -> {local_path}")
                 except NoCredentialsError:
@@ -66,7 +67,9 @@ def download_data_from_s3(data_root_path, data_name):
                     merged_df_list.append(df)
                 except Exception as e:
                     print(f"Error reading {key}: {e}")
-        
+            if count > 10:
+                break
+            
         if response.get('IsTruncated'):
             continuation_token = response['NextContinuationToken']
         else:

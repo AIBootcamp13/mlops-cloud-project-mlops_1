@@ -16,14 +16,14 @@ from airflow.operators.python import PythonOperator
 from modeling.src.airflow.tasks.train import train
 
 with DAG(
-    "anomaly_model_train",
+    "train_anomaly_temperature_on_airflow",
     default_args = {
         'owner': 'lmw',
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(minutes=5),
     },
-    description="anomaly model train",
+    description="train anomaly temperature on airflow",
     schedule=timedelta(days=30),
     start_date=pendulum.now("UTC").subtract(days=1),
     catchup=False,

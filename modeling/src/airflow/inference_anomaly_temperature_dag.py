@@ -18,14 +18,14 @@ from modeling.src.airflow.tasks.inference import inference
 from modeling.src.airflow.tasks.is_model_drift import is_model_drift
 
 with DAG(
-    "anomaly_model_inference",
+    "inference_anomaly_temperature_on_airflow",
     default_args = {
         'owner': 'lmw',
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(minutes=5),
     },
-    description="anomaly model inference",
+    description="inference anomaly temperature on airflow",
     schedule=timedelta(days=7),
     start_date=pendulum.now("UTC").subtract(days=1),
     catchup=False,
@@ -44,7 +44,7 @@ with DAG(
 
     train_trigger_task = TriggerDagRunOperator(
         task_id="train_trigger_task",
-        trigger_dag_id="anomaly_model_train",
+        trigger_dag_id="train_anomaly_temperature_on_airflow",
     )
 
     inference_task >> is_model_drift_task >> train_trigger_task
