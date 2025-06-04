@@ -85,3 +85,10 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
 
     # write_db(temperature_df, "mlops", "temperature")
     return results
+
+
+def run_inference(data_root_path, model_root_path, batch_size):
+    
+    temperature_results = run_inference_temperature(data_root_path, model_root_path, batch_size=batch_size)
+    PM_results = run_inference_PM(data_root_path, model_root_path, batch_size=batch_size)
+    return temperature_results, PM_results

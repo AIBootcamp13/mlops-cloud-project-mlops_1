@@ -51,3 +51,10 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
 
 def run_pm_train_with_s3(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
     _, _ = run_pm_train(data_root_path, model_root_path, batch_size, model_name)
+
+def run_train(data_root_path, model_root_path, batch_size):
+    
+    _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path, batch_size=batch_size)
+    _, val_loss_PM = run_pm_train(data_root_path, model_root_path, batch_size=batch_size)
+
+    return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'
