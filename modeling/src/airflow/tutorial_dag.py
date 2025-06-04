@@ -24,7 +24,7 @@ default_args = {
 }
 
 dag = DAG(
-    'lstm_model_training_selection',
+    'tutorial',
     default_args=default_args,
     description='a simple dag for lstm model training and selection',
     schedule_interval=timedelta(days=1),
