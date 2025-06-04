@@ -1,4 +1,5 @@
 import os
+import glob
 
 import pandas as pd
 
@@ -29,7 +30,11 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
     epochs = CFG["EPOCHS"]
     window_size = CFG["WINDOW_SIZE"]
 
-    data_path = os.path.join(data_root_path, 'PM10_data.csv')
+    files = glob.glob(os.path.join(data_root_path, "*_PM10_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_anomalies_file = files[-1]
+
+    data_path = os.path.join(data_root_path, latest_anomalies_file)
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_PM)
 
