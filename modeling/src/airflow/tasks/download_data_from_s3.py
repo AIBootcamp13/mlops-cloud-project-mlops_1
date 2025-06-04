@@ -56,7 +56,7 @@ def download_pm10_from_s3(data_root_path):
 
                 try:
                     df = pd.read_csv(local_path)
-                    df['source_file'] = key
+                    # df['source_file'] = key
                     merged_df_list.append(df)
                 except Exception as e:
                     print(f"Error reading {key}: {e}")
@@ -66,8 +66,9 @@ def download_pm10_from_s3(data_root_path):
         else:
             break
 
-    if merged_df_list:
-        merged_df = pd.concat(merged_df_list, ignore_index=True)
-        merged_df.to_csv(os.path.join(data_root_path, f'{now}_PM10_data.csv'))
-    else:
-        print("No CSVs were successfully read.")
+    if not merged_df_list:
+        print("no csv were successfully read.")
+        return
+
+    new_df = pd.concat(merged_df_list, ignore_index=True)
+    new_df.to_csv(os.path.join(data_root_path, f'{now}_PM10_data.csv'), index=False)

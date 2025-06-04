@@ -22,11 +22,11 @@ from modeling.src.train.train import run_pm_train
 
 data_root_path = os.path.join(project_path, 'data')
 
-def pm10_data_exists():
-    files = glob.glob(os.path.join(project_path, "*_PM10_data.csv"))
+def pm10_data_exists_check():
+    files = glob.glob(os.path.join(data_root_path, "*_PM10_data.csv"))
     if files:
-        return True
-    return False
+        return 'run_pm_train'
+    return ['download_pm10_from_s3', 'run_pm_train']
 
 with DAG(
     "train_pm10_with_s3",
@@ -38,36 +38,39 @@ with DAG(
     },
     description="train with s3",
     schedule=timedelta(days=30),
-    start_data = pendulum.now("UTC").subtract(days=1),
+    start_date = pendulum.now("UTC").subtract(days=1),
     catchup=False,
 ) as dag:
     pm10_data_exists_check_task = BranchPythonOperator(
         task_id="pm10_data_exists_check",
-        python_callable=pm10_data_exists
+        python_callable=pm10_data_exists_check
     )
 
     download_pm10_from_s3_task = PythonOperator(
         task_id='download_pm10_from_s3',
-        python_callable=download_pm10_from_s3
+        python_callable=download_pm10_from_s3,
+        op_kwargs={
+            'data_root_path': data_root_path,
+        },
     )
 
     run_pm_train_task = PythonOperator(
         task_id='run_pm_train',
         python_callable=run_pm_train,
-        # ata_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"
         op_kwargs={
             'data_root_path': data_root_path,
             'model_root_path': os.path.join(project_path, 'models'),
             'batch_size': 64,
             'model_name': 'multi_output_lstm'
         },
+        do_xcom_push=False,
     )
 
-    end = EmptyOperator(task_id='pm10 train end')
+    train_pm10_with_s3_end_task = EmptyOperator(task_id='train_pm10_with_s3_end')
 
     pm10_data_exists_check_task >> run_pm_train_task
     pm10_data_exists_check_task >> download_pm10_from_s3_task >> run_pm_train_task
-    run_pm_train_task >> end
+    run_pm_train_task >> train_pm10_with_s3_end_task
     
 if __name__ == "__main__":
     download_pm10_from_s3(data_root_path)
