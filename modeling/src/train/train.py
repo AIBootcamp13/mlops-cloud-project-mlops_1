@@ -48,3 +48,6 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
     trainer.save_model(model_root_path, save_model_name, False)
 
     return model, val_loss
+
+def run_pm_train_with_s3(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
+    _, _ = run_pm_train(data_root_path, model_root_path, batch_size, model_name)
