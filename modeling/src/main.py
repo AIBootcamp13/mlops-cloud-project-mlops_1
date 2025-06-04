@@ -11,13 +11,14 @@ import pandas as pd
 import numpy as np
 import torch
 import fire
+import mlflow
+
 
 from modeling.src.train.train import run_train
 from modeling.src.inference.inference import run_inference
-from modeling.src.mlflow.mlflow import run_mlflow
+from modeling.src.mlflow.mlflow import run_mlflow_tester
 
 from modeling.src.utils.utils import project_path
-
 
 def main(run_mode, batch_size=64):
     load_dotenv()
@@ -31,8 +32,11 @@ def main(run_mode, batch_size=64):
     elif run_mode == "inference":
         temperature_results, PM_results = run_inference(data_root_path, model_root_path, batch_size)
         print(temperature_results, PM_results)
-    elif run_mode == "mlflow":
-        run_mlflow()
+    elif run_mode == "mlflow-tester":
+        mlflow_url = os.getenv("MLFLOW_HOST")
+        mlflow.set_tracking_uri(mlflow_url)
+        mlflow.set_experiment("WeatherExperiment")
+        run_mlflow_tester()
 
 if __name__ == '__main__':
     fire.Fire(main)

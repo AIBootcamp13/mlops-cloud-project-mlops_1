@@ -38,7 +38,7 @@ def run_experiments(run_name, model_name, batch_size):
         mlflow.log_artifacts(model_root_path, artifact_path='checkpoints')
         mlflow.log_metric("val loss", val_loss)
 
-def run_mlflow():
+def run_mlflow_tester():
     run_names = ["temperature", "PM"]
     model_names = ["MULTI_OUTPUT_LSTM", "MULTI_OUTPUT_STACKED_LSTM"]
     batch_sizes = [4, 8, 16, 32, 64]
@@ -56,4 +56,4 @@ if __name__ == "__main__":
     mlflow.set_tracking_uri(mlflow_url)
     mlflow.set_experiment("WeatherExperiment")
 
-    run_mlflow()
+    run_mlflow_tester()
