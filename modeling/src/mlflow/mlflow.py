@@ -6,7 +6,7 @@ import torch
 import mlflow
 from mlflow.models.signature import infer_signature
 
-from modeling.src.train.train import run_temperature_train, run_pm_train
+from modeling.src.train.train import run_temperature_train, run_pm10_train
 from modeling.src.utils.utils import project_path
 
 def run_experiments(run_name, model_name, batch_size):
@@ -32,7 +32,7 @@ def run_experiments(run_name, model_name, batch_size):
         if run_name == "temperature":
             model, val_loss = run_temperature_train(data_root_path, model_root_path, **params)
         elif run_name == "PM":
-            model, val_loss = run_pm_train(data_root_path, model_root_path, **params)
+            model, val_loss = run_pm10_train(data_root_path, model_root_path, **params)
         
         mlflow.pytorch.log_model(model, 'models', input_example=input_example.numpy(), signature=signature)
         mlflow.log_artifacts(model_root_path, artifact_path='checkpoints')

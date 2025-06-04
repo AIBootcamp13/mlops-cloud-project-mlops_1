@@ -13,7 +13,7 @@ import torch
 import fire
 import mlflow
 
-
+from modeling.src.train.anomaly import train
 from modeling.src.train.train import run_train
 from modeling.src.inference.inference import run_inference
 from modeling.src.mlflow.mlflow import run_mlflow_tester
@@ -37,6 +37,8 @@ def main(run_mode, batch_size=64):
         mlflow.set_tracking_uri(mlflow_url)
         mlflow.set_experiment("WeatherExperiment")
         run_mlflow_tester()
+    elif run_mode == "anomaly-train":
+        train(project_path(), 'temperature', 'temperature')
 
 if __name__ == '__main__':
     fire.Fire(main)

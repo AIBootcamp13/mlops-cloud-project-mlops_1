@@ -1,18 +1,32 @@
-def inference(project_path):
-    import os
-    import sys
+import os
+import sys
+import glob
 
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    from datetime import datetime
-    import pytz
-    import torch
-    import torch.nn as nn
-    from torch.utils.data import DataLoader, TensorDataset
-    from sklearn.preprocessing import MinMaxScaler
-    from sklearn.model_selection import train_test_split
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime
+import pytz
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+
+def is_model_drift(project_path):
+    DRIFT_THRESHOLD = 40
+
+    anomalies_files = glob.glob(os.path.join(project_path, "data/outputs/inference/*_temperature_*_anomalies.csv"))
+    anomalies_files.sort(key=os.path.getmtime)
+    latest_anomalies_file = anomalies_files[-1]
+
+    df = pd.read_csv(latest_anomalies_file)
+
+    return len(df) > DRIFT_THRESHOLD
+
+def inference(project_path):
+
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')

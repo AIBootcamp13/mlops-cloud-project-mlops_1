@@ -23,25 +23,25 @@ from modeling.src.utils.aws import download_data_from_s3, fast_download_data_fro
 data_root_path = os.path.join(project_path, 'data')
 
 with DAG(
-    "train_anomaly_temperature_on_airflow",
+    "train_anomaly_pm10_on_airflow",
     default_args = {
         'owner': 'lmw',
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(minutes=5),
     },
-    description="train anomaly temperature on airflow",
+    description="train anomaly pm10 on airflow",
     schedule=timedelta(days=30),
     start_date=pendulum.now("UTC").subtract(days=1),
     catchup=False,
 ) as dag:
     
-    download_temperature_from_s3_task = PythonOperator(
-        task_id='download_temperature_from_s3',
+    download_pm10_from_s3_task = PythonOperator(
+        task_id='download_pm10_from_s3',
         python_callable=download_data_from_s3,
         op_kwargs={
             'data_root_path': data_root_path,
-            'data_name': 'temperature',
+            'data_name': 'pm10',
         },
     )
 
@@ -50,12 +50,12 @@ with DAG(
         python_callable=train,
         op_kwargs={
             'project_path': project_path,
-            'data_name': 'temperature', 
-            'model_name': 'temperature'
+            'data_name': 'pm10', 
+            'model_name': 'pm10'
         },
     )
 
-    download_temperature_from_s3_task >> train_task
+    download_pm10_from_s3_task >> train_task
 
 if __name__ == "__main__":
     train(project_path)

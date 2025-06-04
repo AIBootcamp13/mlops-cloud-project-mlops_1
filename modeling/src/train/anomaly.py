@@ -1,35 +1,53 @@
-def train(project_path):
-    import os
+import os
+import glob
 
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    from datetime import datetime
-    import pytz
-    import torch
-    import torch.nn as nn
-    from torch.utils.data import DataLoader, TensorDataset
-    from sklearn.preprocessing import MinMaxScaler
-    from sklearn.model_selection import train_test_split
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime
+import pytz
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 
+from modeling.src.utils.utils import get_output_temperature, get_output_pm10
+from modeling.src.utils.aws import download_data_from_s3
+
+def train(project_path, data_name, model_name):
+    model_root_path = os.path.join(project_path, 'models')
+    data_root_path = os.path.join(project_path, 'data')
+    anomaly_data_path = os.path.join(data_root_path, 'anomaly/train')
+
+    os.makedirs(anomaly_data_path, exist_ok=True)
+    os.makedirs(model_root_path, exist_ok=True)
+    
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
 
-    temperature_df = pd.read_csv(os.path.join(project_path, 'data/TA_data.csv'))
-    temperature_df_train = temperature_df[-365*5:-365].reset_index(drop=True)
-    temperature_df_inference = temperature_df[-365:].reset_index(drop=True)
-    temperature_df = temperature_df_train
+    download_data_from_s3(data_root_path, data_name)
+    files = glob.glob(os.path.join(data_root_path, f"*_{data_name}_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_file = files[-1]
 
-    temperature_columns = ['TA_AVG', 'TA_MAX', 'TA_MIN']
+    df = pd.read_csv(latest_file)
+    df_train = df[-365*5:-365].reset_index(drop=True)
+    df_inference = df[-365:].reset_index(drop=True)
+    df = df_train
 
-    temperature_df_timestamp = temperature_df[['날짜']].copy()
-    temperature_df_timestamp.rename(columns={'날짜': 'datetime'}, inplace=True)
-    temperature_df = temperature_df[temperature_columns]
+    if model_name == 'temperature':
+        columns = get_output_temperature()
+    elif model_name == 'pm10':
+        columns = get_output_pm10()
+
+    df_timestamp = df[['date']].copy()
+    df = df[columns]
 
     train_prp = 0.6
-    train = temperature_df.iloc[:int(temperature_df.shape[0]*train_prp)]
-    test = temperature_df.iloc[int(temperature_df.shape[0]*train_prp):]
+    train = df.iloc[:int(df.shape[0]*train_prp)]
+    test = df.iloc[int(df.shape[0]*train_prp):]
 
     scaler = MinMaxScaler()
     X_train = scaler.fit_transform(train)
@@ -125,7 +143,7 @@ def train(project_path):
         print(f"Epoch [{epoch+1}/{epochs}] | Train Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f}")
 
 
-    model_path = os.path.join(project_path, f"models/lstm_temperature_anomaly_detector.pth")
+    model_path = os.path.join(model_root_path, f"lstm_{model_name}_anomaly_detector.pth")
     torch.save(model.state_dict(), model_path)
 
 
@@ -138,7 +156,7 @@ def train(project_path):
     plt.legend()
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(project_path, f"data/outputs/train/{now}_temperature_Error_Loss.png"))
+    plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_Error_Loss.png"))
 
 
     with torch.no_grad():
@@ -148,24 +166,24 @@ def train(project_path):
 
     X_pred = X_pred[:, -1, :]
     X_pred_inv = scaler.inverse_transform(X_pred)
-    pred_df = pd.DataFrame(X_pred_inv, columns=temperature_df.columns)
+    pred_df = pd.DataFrame(X_pred_inv, columns=df.columns)
 
     scores = pd.DataFrame()
 
-    for column in temperature_columns:
-        scores[f"{column}_train"] = temperature_df[column].values[:len(pred_df)]
+    for column in columns:
+        scores[f"{column}_train"] = df[column].values[:len(pred_df)]
         scores[f"{column}_predicted"] = pred_df[column]
         scores[f"{column}_loss_mae"] = (scores[f"{column}_train"] - scores[f"{column}_predicted"]).abs()
 
 
-    for column in temperature_columns:
+    for column in columns:
         plt.figure(figsize=(8, 4))
         plt.hist(scores[f"{column}_loss_mae"], bins=50)
-        plt.title(f"temperature {column} Error Distribution (Train)")
+        plt.title(f"{model_name} {column} Error Distribution (Train)")
         plt.xlabel(f"MAE {column}")
         plt.ylabel("Frequency")
         plt.tight_layout()
-        plt.savefig(os.path.join(project_path, f"data/outputs/train/{now}_temperature_{column}_Error_Distribution.png"))
+        plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_Error_Distribution.png"))
 
     with torch.no_grad():
         X_tensor = torch.tensor(X_test, dtype=torch.float32)
@@ -174,67 +192,58 @@ def train(project_path):
 
     X_pred = X_pred[:, -1, :]
     X_pred_inv = scaler.inverse_transform(X_pred)
-    X_pred_df = pd.DataFrame(X_pred_inv, columns=temperature_df.columns)
+    X_pred_df = pd.DataFrame(X_pred_inv, columns=df.columns)
     X_pred_df.index = test.index
 
-    import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    import os
-    import numpy as np
-    import pandas as pd
-
-    output_dir = os.path.join(project_path, "data/outputs/train")
-    os.makedirs(output_dir, exist_ok=True)
-
-    for column in temperature_columns:
+    for column in columns:
         scores = X_pred_df.copy()
 
-        scores['datetime'] = pd.to_datetime(temperature_df_timestamp.loc[scores.index, 'datetime'], errors='coerce')
+        scores['date'] = pd.to_datetime(df_timestamp.loc[scores.index, 'date'], errors='coerce')
         scores['real'] = test[column].values
         scores['loss_mae'] = np.abs(scores['real'] - scores[column])
         scores['Threshold'] = 10
         scores['Anomaly'] = (scores['loss_mae'] > scores['Threshold']).astype(int)
         scores['anomalies'] = np.where(scores['Anomaly'] == 1, scores['real'], np.nan)
 
-        scores = scores.sort_values(by='datetime').reset_index(drop=True)
+        scores = scores.sort_values(by='date').reset_index(drop=True)
 
         fig, ax = plt.subplots(figsize=(12, 5))
-        ax.plot(scores['datetime'], scores['loss_mae'], label='Loss')
-        ax.plot(scores['datetime'], scores['Threshold'], label='Threshold', linestyle='--')
+        ax.plot(scores['date'], scores['loss_mae'], label='Loss')
+        ax.plot(scores['date'], scores['Threshold'], label='Threshold', linestyle='--')
 
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         plt.xticks(rotation=45)
         ax.set_title("Loss vs Threshold")
-        ax.set_xlabel("Datetime")
+        ax.set_xlabel("Date")
         ax.set_ylabel("Loss")
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{now}_temperature_{column}_Threshold.png"))
+        plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_Threshold.png"))
         plt.close()
 
-        cols = ['datetime'] + [col for col in scores.columns if col != 'datetime']
+        cols = ['date'] + [col for col in scores.columns if col != 'date']
         scores = scores[cols]
         scores[scores["Anomaly"] == 1].to_csv(
-            os.path.join(output_dir, f"{now}_temperature_{column}_anomalies.csv"),
+            os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_anomalies.csv"),
             index=False
         )
 
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(scores['datetime'], scores['real'], label=column)
+        ax.plot(scores['date'], scores['real'], label=column)
 
         if scores['Anomaly'].sum() > 0:
             mask = scores['Anomaly'] == 1
-            ax.scatter(scores.loc[mask, 'datetime'], scores.loc[mask, 'anomalies'],
+            ax.scatter(scores.loc[mask, 'date'], scores.loc[mask, 'anomalies'],
                     color='red', label='Anomaly', s=25)
 
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         plt.xticks(rotation=45)
         ax.set_title("Anomalies Detected (Test)")
-        ax.set_xlabel("Datetime")
+        ax.set_xlabel("Date")
         ax.set_ylabel(column)
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"{now}_temperature_{column}_Anomaly.png"))
+        plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_Anomaly.png"))
         plt.close()

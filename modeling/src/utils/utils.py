@@ -8,10 +8,15 @@ import os
 import sys
 import glob
 
+def get_output_temperature():
+    return ["TA_AVG", "TA_MAX", "TA_MIN"]
+
+def get_output_pm10():
+    return ["PM10_MIN", "PM10_MAX", "PM10_AVG"]
 
 def get_outputs():
-    outputs_temperature = ["TA_AVG", "TA_MAX", "TA_MIN"]
-    outputs_PM = ["PM10_MIN", "PM10_MAX", "PM10_AVG"]
+    outputs_temperature = get_output_temperature()
+    outputs_PM = get_output_pm10()
     return outputs_temperature, outputs_PM
 
 def get_scaler(data_path, outputs):

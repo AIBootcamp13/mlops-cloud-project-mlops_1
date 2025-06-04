@@ -1,6 +1,10 @@
+import io
 import os
-import shutil
+import glob
 import sys
+
+from dotenv import load_dotenv
+load_dotenv()
 
 project_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 print(project_path)
@@ -14,8 +18,8 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
-from modeling.src.airflow.tasks.inference import inference
-from modeling.src.airflow.tasks.is_model_drift import is_model_drift
+from modeling.src.inference.anomaly import inference
+from modeling.src.inference.anomaly import is_model_drift
 
 with DAG(
     "inference_anomaly_temperature_on_airflow",
