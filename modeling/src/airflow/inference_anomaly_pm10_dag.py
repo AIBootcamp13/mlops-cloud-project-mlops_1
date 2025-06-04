@@ -22,14 +22,14 @@ from modeling.src.inference.anomaly import inference
 from modeling.src.inference.anomaly import is_model_drift
 
 with DAG(
-    "inference_anomaly_temperature_on_airflow",
+    "inference_anomaly_pm10_on_airflow",
     default_args = {
         'owner': 'lmw',
         'depends_on_past': False,
         'retries': 1,
         'retry_delay': timedelta(minutes=5),
     },
-    description="inference anomaly temperature on airflow",
+    description="inference anomaly pm10 on airflow",
     schedule=timedelta(days=7),
     start_date=pendulum.now("UTC").subtract(days=1),
     catchup=False,
@@ -39,8 +39,8 @@ with DAG(
         python_callable=inference,
         op_kwargs={
             'project_path': project_path,
-            'data_name': 'temperature', 
-            'model_name': 'temperature'
+            'data_name': 'pm10', 
+            'model_name': 'pm10'
         },
     )
 
@@ -49,18 +49,18 @@ with DAG(
         python_callable=is_model_drift,
         op_kwargs={
             'project_path': project_path,
-            'model_name': 'temperature'
+            'model_name': 'pm10'
         },
     )
 
-    train_anomaly_temperature_trigger_task = TriggerDagRunOperator(
-        task_id="train_anomaly_temperature_trigger_task",
-        trigger_dag_id="train_anomaly_temperature_on_airflow",
+    train_anomaly_pm10_trigger_task = TriggerDagRunOperator(
+        task_id="train_anomaly_pm10_trigger_task",
+        trigger_dag_id="train_anomaly_pm10_on_airflow",
     )
 
-    train_temperature_trigger_task = TriggerDagRunOperator(
-        task_id="train_temperature_trigger_task",
-        trigger_dag_id="train_temperature_on_airflow",
+    train_pm10_trigger_task = TriggerDagRunOperator(
+        task_id="train_pm10_trigger_task",
+        trigger_dag_id="train_pm10_on_airflow",
     )
 
-    inference_task >> is_model_drift_task >> train_anomaly_temperature_trigger_task >> train_temperature_trigger_task
+    inference_task >> is_model_drift_task >> train_anomaly_pm10_trigger_task >> train_pm10_trigger_task

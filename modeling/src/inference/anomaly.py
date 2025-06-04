@@ -14,10 +14,16 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
-def is_model_drift(project_path):
-    DRIFT_THRESHOLD = 40
+from modeling.src.utils.utils import get_output_temperature, get_output_pm10
+from modeling.src.utils.aws import download_data_from_s3
 
-    anomalies_files = glob.glob(os.path.join(project_path, "data/outputs/inference/*_temperature_*_anomalies.csv"))
+def is_model_drift(project_path, model_name):
+    data_root_path = os.path.join(project_path, 'data')
+    anomaly_data_path = os.path.join(data_root_path, 'anomaly/inference')
+
+    DRIFT_THRESHOLD = -1
+
+    anomalies_files = glob.glob(os.path.join(anomaly_data_path, f"*_{model_name}_*_anomalies.csv"))
     anomalies_files.sort(key=os.path.getmtime)
     latest_anomalies_file = anomalies_files[-1]
 
@@ -25,23 +31,36 @@ def is_model_drift(project_path):
 
     return len(df) > DRIFT_THRESHOLD
 
-def inference(project_path):
+def inference(project_path, data_name, model_name):
+    model_root_path = os.path.join(project_path, 'models')
+    data_root_path = os.path.join(project_path, 'data')
+    anomaly_data_path = os.path.join(data_root_path, 'anomaly/inference')
 
+    os.makedirs(anomaly_data_path, exist_ok=True)
+    os.makedirs(model_root_path, exist_ok=True)
 
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
 
-    temperature_df = pd.read_csv(os.path.join(project_path, 'data/TA_data.csv'))
-    temperature_df_train = temperature_df[-365*5:-365].reset_index(drop=True)
-    temperature_df_inference = temperature_df[-365:].reset_index(drop=True)
-    temperature_df = temperature_df_inference
+    download_data_from_s3(data_root_path, data_name)
+    files = glob.glob(os.path.join(data_root_path, f"*_{data_name}_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_file = files[-1]
 
-    temperature_columns = ['TA_AVG', 'TA_MAX', 'TA_MIN']
+    df = pd.read_csv(latest_file)
+
+    df_train = df[-365*5:-365].reset_index(drop=True)
+    df_inference = df[-365:].reset_index(drop=True)
+    df = df_inference
+
+    if model_name == 'temperature':
+        columns = get_output_temperature()
+    elif model_name == 'pm10':
+        columns = get_output_pm10()
 
 
-    temperature_df_timestamp = temperature_df[['날짜']].copy()
-    temperature_df_timestamp.rename(columns={'날짜': 'datetime'}, inplace=True)
-    temperature_df = temperature_df[temperature_columns]
+    df_timestamp = df[['date']].copy()
+    df = df[columns]
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,10 +101,10 @@ def inference(project_path):
 
 
     scaler = MinMaxScaler()
-    X = scaler.fit_transform(temperature_df.values)
+    X = scaler.fit_transform(df.values)
     X = X.reshape(X.shape[0], 1, X.shape[1])
 
-    model_path = os.path.join(project_path, f"models/lstm_temperature_anomaly_detector.pth")
+    model_path = os.path.join(model_root_path, f"lstm_{model_name}_anomaly_detector.pth")
     state_dict = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
     model = AnomalyDetectorLSTM(seq_len=1, n_features=X.shape[2])
     model.load_state_dict(state_dict)
@@ -101,60 +120,57 @@ def inference(project_path):
 
     X_pred = X_pred.reshape(X_pred.shape[0], X_pred.shape[2])
     X_pred_inv = scaler.inverse_transform(X_pred)
-    X_pred_df = pd.DataFrame(X_pred_inv, columns=temperature_df.columns)
-    X_pred_df.index = temperature_df.index
+    X_pred_df = pd.DataFrame(X_pred_inv, columns=df.columns)
+    X_pred_df.index = df.index
 
-    for column in temperature_columns:
+    for column in columns:
         scores = X_pred_df.copy()
 
-        scores['datetime'] = pd.to_datetime(temperature_df_timestamp['datetime'], errors="coerce")
-        scores['real'] = temperature_df[column].values
+        scores['date'] = pd.to_datetime(df_timestamp['date'], errors="coerce")
+        scores['real'] = df[column].values
         scores['loss_mae'] = np.abs(scores['real'] - scores[column])
         scores['Threshold'] = 40
         scores['Anomaly'] = (scores['loss_mae'] > scores['Threshold']).astype(int)
         scores['anomalies'] = np.where(scores["Anomaly"] == 1, scores["real"], np.nan)
 
-        scores = scores.sort_values("datetime").reset_index(drop=True)
-
-        inference_output_dir = os.path.join(project_path, 'data/outputs/inference')
-        os.makedirs(inference_output_dir, exist_ok=True)
+        scores = scores.sort_values("date").reset_index(drop=True)
 
         fig, ax = plt.subplots(figsize=(12, 5))
-        ax.plot(scores["datetime"], scores["loss_mae"], label="Loss")
-        ax.plot(scores["datetime"], scores["Threshold"], label="Threshold", linestyle='--')
+        ax.plot(scores["date"], scores["loss_mae"], label="Loss")
+        ax.plot(scores["date"], scores["Threshold"], label="Threshold", linestyle='--')
 
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         plt.xticks(rotation=45)
         ax.set_title("Loss vs Threshold")
-        ax.set_xlabel("Datetime")
+        ax.set_xlabel("Date")
         ax.set_ylabel("Loss")
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(inference_output_dir, f"{now}_temperature_{column}_Threshold.png"))
+        plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_Threshold.png"))
         plt.close()
 
-        cols = ['datetime'] + [col for col in scores.columns if col != 'datetime']
+        cols = ['date'] + [col for col in scores.columns if col != 'date']
         scores = scores[cols]
         scores[scores["Anomaly"] == 1].to_csv(
-            os.path.join(inference_output_dir, f'{now}_temperature_{column}_anomalies.csv'),
+            os.path.join(anomaly_data_path, f'{now}_{model_name}_{column}_anomalies.csv'),
             index=False
         )
 
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(scores["datetime"], scores["real"], label=column)
+        ax.plot(scores["date"], scores["real"], label=column)
         if scores["Anomaly"].sum() > 0:
             mask = scores["Anomaly"] == 1
-            ax.scatter(scores.loc[mask, "datetime"], scores.loc[mask, "anomalies"],
+            ax.scatter(scores.loc[mask, "date"], scores.loc[mask, "anomalies"],
                     color="red", label="Anomaly", s=25)
 
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         plt.xticks(rotation=45)
         ax.set_title("Anomalies Detected (Inference)")
-        ax.set_xlabel("Datetime")
+        ax.set_xlabel("Date")
         ax.set_ylabel(column)
         ax.legend()
         plt.tight_layout()
-        plt.savefig(os.path.join(inference_output_dir, f"{now}_temperature_{column}_Anomaly.png"))
+        plt.savefig(os.path.join(anomaly_data_path, f"{now}_{model_name}_{column}_Anomaly.png"))
         plt.close()
