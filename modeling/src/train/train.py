@@ -6,12 +6,20 @@ import pandas as pd
 from modeling.src.trainer.baselineTrainer import BaselineTrainer
 from modeling.src.utils.utils import get_outputs, get_scaler
 from modeling.src.utils.utils import CFG
+from modeling.src.utils.aws import download_data_from_s3
 
 def run_temperature_train(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
     epochs = CFG["EPOCHS"]
     window_size = CFG["WINDOW_SIZE"]
+    
+    data_name = 'temperature'
+    download_data_from_s3(data_root_path, data_name)
 
-    data_path = os.path.join(data_root_path, 'TA_data.csv')
+    files = glob.glob(os.path.join(data_root_path, f"*_{data_name}_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_file = files[-1]
+
+    data_path = os.path.join(data_root_path, latest_file)
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_temperature)
 
@@ -30,17 +38,20 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
     epochs = CFG["EPOCHS"]
     window_size = CFG["WINDOW_SIZE"]
 
-    files = glob.glob(os.path.join(data_root_path, "*_PM10_data.csv"))
-    files.sort(key=os.path.getmtime)
-    latest_anomalies_file = files[-1]
+    data_name = 'pm10'
+    download_data_from_s3(data_root_path, data_name)
 
-    data_path = os.path.join(data_root_path, latest_anomalies_file)
+    files = glob.glob(os.path.join(data_root_path, f"*_{data_name}_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_file = files[-1]
+
+    data_path = os.path.join(data_root_path, latest_file)
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_PM)
 
     data = pd.read_csv(data_path)
 
-    save_model_name = "PM"
+    save_model_name = "pm10"
 
     trainer = BaselineTrainer(model_name, epochs, batch_size, outputs_PM, scaler, window_size)
     trainer.split_data(data)
@@ -49,7 +60,10 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
 
     return model, val_loss
 
-def run_pm_train_with_s3(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
+def run_temperature_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
+    _, _ = run_temperature_train(data_root_path, model_root_path, batch_size, model_name)
+
+def run_pm_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
     _, _ = run_pm_train(data_root_path, model_root_path, batch_size, model_name)
 
 def run_train(data_root_path, model_root_path, batch_size):

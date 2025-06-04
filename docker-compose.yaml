@@ -24,16 +24,16 @@ x-airflow-common: &airflow_common
   image: mlops-core:latest
 
 services:
-  train-inference-tester:
-    <<: *common
-    container_name: lmw-train-inference-tester
-    volumes:
-      - ./:/app
-    working_dir: /app
-    command: bash -c "python modeling/src/main.py --run_mode train && python modeling/src/main.py --run_mode inference"
-    build:
-      context: .
-      dockerfile: Dockerfile
+  # train-inference-tester:
+  #   <<: *common
+  #   container_name: lmw-train-inference-tester
+  #   volumes:
+  #     - ./:/app
+  #   working_dir: /app
+  #   command: bash -c "python modeling/src/main.py --run_mode train && python modeling/src/main.py --run_mode inference"
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
 
   mlflow-web:
     <<: *common
@@ -46,15 +46,15 @@ services:
     command: mlflow ui --host 0.0.0.0 --port 5000
     restart: unless-stopped
   
-  mlflow-tester:
-    <<: *common
-    container_name: lmw-mlflow-tester
-    depends_on:
-      - mlflow-web
-    volumes:
-      - ./:/app
-    working_dir: /app
-    command: python modeling/src/main.py --run_mode mlflow-tester
+  # mlflow-tester:
+  #   <<: *common
+  #   container_name: lmw-mlflow-tester
+  #   depends_on:
+  #     - mlflow-web
+  #   volumes:
+  #     - ./:/app
+  #   working_dir: /app
+  #   command: python modeling/src/main.py --run_mode mlflow-tester
 
   airflow-init:
     <<: *airflow_common

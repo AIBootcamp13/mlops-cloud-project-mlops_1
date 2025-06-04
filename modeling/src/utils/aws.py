@@ -7,20 +7,20 @@ import pandas as pd
 import boto3
 from botocore.exceptions import NoCredentialsError
 
-def download_pm10_from_s3(data_root_path):
+def download_data_from_s3(data_root_path, data_name):
     kst = pytz.timezone('Asia/Seoul')
     now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
     ymd = datetime.now(kst).strftime('%Y%m%d')
 
-    data_files = glob.glob(os.path.join(data_root_path, f'{ymd}_*_PM10_data.csv'))
+    data_files = glob.glob(os.path.join(data_root_path, f'{ymd}_*_{data_name}_data.csv'))
 
     if data_files:
-        print(f'{ymd}_PM10_data.csv Exists!!')
+        print(f'{ymd}_{data_name}_data.csv Exists!!')
         return
 
     bucket_name = 'mlops-pipeline-jeb'
 
-    prefix = 'results/pm10/'
+    prefix = f'results/{data_name}/'
 
     data_download_path = os.path.join(data_root_path, f"s3data/{now}", bucket_name)
     os.makedirs(data_root_path, exist_ok=True)
@@ -77,4 +77,4 @@ def download_pm10_from_s3(data_root_path):
         return
 
     new_df = pd.concat(merged_df_list, ignore_index=True)
-    new_df.to_csv(os.path.join(data_root_path, f'{now}_PM10_data.csv'), index=False)
+    new_df.to_csv(os.path.join(data_root_path, f'{now}_{data_name}_data.csv'), index=False)
