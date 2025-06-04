@@ -34,7 +34,7 @@ def run_temperature_train(data_root_path, model_root_path, batch_size, model_nam
 
     return model, val_loss
 
-def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
+def run_pm10_train(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
     epochs = CFG["EPOCHS"]
     window_size = CFG["WINDOW_SIZE"]
 
@@ -63,12 +63,12 @@ def run_pm_train(data_root_path, model_root_path, batch_size, model_name="MULTI_
 def run_temperature_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
     _, _ = run_temperature_train(data_root_path, model_root_path, batch_size, model_name)
 
-def run_pm_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
-    _, _ = run_pm_train(data_root_path, model_root_path, batch_size, model_name)
+def run_pm10_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
+    _, _ = run_pm10_train(data_root_path, model_root_path, batch_size, model_name)
 
 def run_train(data_root_path, model_root_path, batch_size):
     
     _, val_loss_temperature = run_temperature_train(data_root_path, model_root_path, batch_size=batch_size)
-    _, val_loss_PM = run_pm_train(data_root_path, model_root_path, batch_size=batch_size)
+    _, val_loss_PM = run_pm10_train(data_root_path, model_root_path, batch_size=batch_size)
 
     return f'total val_loss temperature : {val_loss_temperature}, PM : {val_loss_PM}'

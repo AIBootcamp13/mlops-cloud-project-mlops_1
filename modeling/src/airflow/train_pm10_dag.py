@@ -17,7 +17,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 from modeling.src.utils.aws import download_data_from_s3
-from modeling.src.train.train import run_pm_train_on_airflow
+from modeling.src.train.train import run_pm10_train_on_airflow
 
 data_root_path = os.path.join(project_path, 'data')
 
@@ -45,8 +45,8 @@ with DAG(
     )
 
     run_pm_train_task = PythonOperator(
-        task_id='run_pm_train_on_airflow',
-        python_callable=run_pm_train_on_airflow,
+        task_id='run_pm10_train_on_airflow',
+        python_callable=run_pm10_train_on_airflow,
         op_kwargs={
             'data_root_path': data_root_path,
             'model_root_path': os.path.join(project_path, 'models'),
