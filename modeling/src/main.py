@@ -14,6 +14,7 @@ import fire
 
 from modeling.src.train.train import run_temperature_train, run_pm_train
 from modeling.src.inference.inference import run_inference_PM, run_inference_temperature
+from modeling.src.utils.utils import project_path
 
 def run_train(data_root_path, model_root_path, batch_size):
     
@@ -28,8 +29,11 @@ def run_inference(data_root_path, model_root_path, batch_size):
     PM_results = run_inference_PM(data_root_path, model_root_path, batch_size=batch_size)
     return temperature_results, PM_results
 
-def main(run_mode, data_root_path, model_root_path, batch_size=64):
+def main(run_mode, batch_size=64):
     load_dotenv()
+
+    data_root_path = os.path.join(project_path(), 'data')
+    model_root_path = os.path.join(project_path(), 'models')
 
     if run_mode == "train":
         val_loss = run_train(data_root_path, model_root_path, batch_size)
@@ -40,5 +44,3 @@ def main(run_mode, data_root_path, model_root_path, batch_size=64):
 
 if __name__ == '__main__':
     fire.Fire(main)
-
-    

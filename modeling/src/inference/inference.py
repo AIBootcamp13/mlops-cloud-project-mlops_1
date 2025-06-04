@@ -1,4 +1,5 @@
 import os
+import glob
 
 import torch
 import pandas as pd
@@ -64,7 +65,11 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
 
     window_size = CFG['WINDOW_SIZE']
 
-    data_path = os.path.join(data_root_path, 'PM10_data.csv')
+    files = glob.glob(os.path.join(data_root_path, "*_PM10_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_anomalies_file = files[-1]
+
+    data_path = os.path.join(data_root_path, latest_anomalies_file)
     model_path = os.path.join(model_root_path, 'lstm_PM.pth')
 
     outputs_temperature, outputs_PM = get_outputs()

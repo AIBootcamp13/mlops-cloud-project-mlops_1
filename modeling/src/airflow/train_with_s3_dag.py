@@ -16,7 +16,7 @@ import pendulum
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
-from modeling.src.utils.utils import download_pm10_from_s3
+from modeling.src.utils.aws import download_pm10_from_s3
 from modeling.src.train.train import run_pm_train_with_s3
 
 data_root_path = os.path.join(project_path, 'data')
