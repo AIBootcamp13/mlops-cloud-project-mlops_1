@@ -40,10 +40,13 @@ def PM_to_df(results, outputs):
     )
 
 def message_to_slack(message):
+    url = os.getenv('SLACK_WEBHOOK_URL')
+    if not url:
+        raise ValueError("SLACK_WEBHOOK_URL environment variable not set")
+
     data = {"text": message}
     headers = {'Content-type': 'application/json'}
 
-    url = os.getenv('SLACK_WEBHOOK_URL')
     requests.post(url, data=json.dumps(data), headers=headers)
 
 def project_path():
