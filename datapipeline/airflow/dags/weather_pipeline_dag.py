@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.providers.docker.operators.docker import DockerOperator
 
 from src.data_loaders.temp_loader import main as load_temp
 from src.data_loaders.pm10_loader import main as load_pm10
@@ -38,9 +39,20 @@ with DAG(
         python_callable=run_eda,
     )
 
-    task_upload_s3 = PythonOperator(
-        task_id='upload_to_s3',
-        python_callable=upload_s3,
+    task_upload_s3 = DockerOperator(
+        task_id='upload_to_s3_docker',
+        image='upload-script:latest',
+        api_version='auto',
+        auto_remove=True,
+        command='sh -c "PYTHONPATH=/app python src/cloud/upload_script.py --temp_dates=2025-06-01,2025-06-02 --pm10_dates=2025-06-01,2025-06-02"',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge',
+        environment={
+            'AWS_ACCESS_KEY_ID': 'your_key',
+            'AWS_SECRET_ACCESS_KEY': 'your_secret',
+            'AWS_REGION': 'ap-northeast-2',
+            'S3_BUCKET_NAME': 'mlops-pipeline-jeb'
+        }
     )
 
     task_temp >> task_pm10 >> task_eda >> task_upload_s3

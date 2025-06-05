@@ -1,16 +1,17 @@
-# 1. 베이스 이미지
+# 베이스 이미지 선택
 FROM python:3.10-slim
 
-# 2. 작업 디렉토리
+# 작업 디렉토리 설정
 WORKDIR /app
 
-# 3. 의존성 설치
-COPY upload_requirements.txt .
-RUN pip install --no-cache-dir -r upload_requirements.txt
+# requirements 파일 복사 및 설치
+COPY datapipeline/upload_requirements.txt .
+RUN pip install -r upload_requirements.txt
 
-# 4. 소스 코드 복사
-COPY datapipeline/src/ ./src/
+# src 전체 복사
+COPY datapipeline/src /app/src
 
-# 5. 실행 환경 설정 및 실행 명령
-ENV PYTHONPATH=/app
+# 실행 커맨드 (원한다면 직접 실행 가능)
 CMD ["python", "src/cloud/upload_script.py"]
+
+ENV PYTHONPATH=/app

@@ -172,3 +172,5 @@ docker-compose.override.yml
 
 # 기타 파생 파일
 *.pyc
+
+*.pem
