@@ -2,6 +2,8 @@ import os
 import boto3
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
+import io
+import pandas as pd
 
 def upload_to_s3(temp_dates, pm10_dates):
     load_dotenv()
@@ -26,26 +28,38 @@ def upload_to_s3(temp_dates, pm10_dates):
 
     for category, dates, prefix in targets:
         for date_str in dates:
-            file_path = f'./src/data/processed/{category}/{date_str}.csv'
-            if not os.path.exists(file_path):
-                continue
+            s3_key_local = f"results/{category}/date={date_str[:7]}/{date_str}.csv"
 
-            month_partition = date_str[:7]  # e.g., "2025-06"
+            # S3에서 원본 읽기
+            try:
+                obj = s3.get_object(Bucket=S3_BUCKET, Key=s3_key_local)
+                df = pd.read_csv(io.BytesIO(obj['Body'].read()))
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchKey':
+                    print(f"File does not exist in S3: {s3_key_local}")
+                    continue
+                else:
+                    raise
+
+            # 업로드 대상 경로 만들기
+            month_partition = date_str[:7]
             s3_key = f"{prefix}/date={month_partition}/{date_str}.csv"
 
-            # 존재 여부 확인
+            # 이미 존재하면 skip
             try:
                 s3.head_object(Bucket=S3_BUCKET, Key=s3_key)
                 skipped += 1
             except ClientError as e:
                 if e.response['Error']['Code'] == '404':
                     try:
-                        s3.upload_file(file_path, S3_BUCKET, s3_key)
+                        csv_buffer = io.StringIO()
+                        df.to_csv(csv_buffer, index=False)
+                        s3.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=csv_buffer.getvalue())
                         uploaded += 1
                     except Exception as err:
-                        failed.append((file_path, str(err)))
+                        failed.append((s3_key, str(err)))
                 else:
-                    failed.append((file_path, str(e)))
+                    failed.append((s3_key, str(e)))
 
     print("\n==== [S3 Upload Summary] ====")
     print(f"Uploaded: {uploaded}")
@@ -70,7 +84,7 @@ def upload_all_files():
         file_list = glob.glob(f"./src/data/processed/{category}/*.csv")
         for file_path in file_list:
             file_name = os.path.basename(file_path)
-            s3_key = f"results/{category}/{file_name}"
+            s3_key_local = f"results/{category}/date={date_str[:7]}/{date_str}.csv"
 
             if os.path.exists(file_path):
                 success = upload_file(file_path, s3_key)
