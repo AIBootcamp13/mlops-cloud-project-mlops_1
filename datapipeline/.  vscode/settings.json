@@ -1,0 +1,8 @@
+{
+"python.analysis.extraPaths": [
+    "./airflow/utils"
+],
+"python.linting.enabled": true,
+"python.analysis.diagnosticMode": "workspace",
+"python.analysis.useLibraryCodeForTypes": true
+}
