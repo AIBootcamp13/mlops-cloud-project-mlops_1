@@ -38,9 +38,9 @@ with DAG(
         python_callable=run_eda,
     )
 
-    task_upload = PythonOperator(
+    task_upload_s3 = PythonOperator(
         task_id='upload_to_s3',
         python_callable=upload_s3,
     )
 
-    task_temp >> task_pm10 >> task_eda >> task_upload
+    task_temp >> task_pm10 >> task_eda >> task_upload_s3

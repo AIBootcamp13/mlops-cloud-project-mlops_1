@@ -86,3 +86,6 @@ def upload_all_files():
     print(f"Skipped : {total_skipped}")
     print(f"Failed  : {total_failed}")
 """
+
+def main(temp_dates, pm10_dates):
+    return upload_to_s3(temp_dates, pm10_dates)
