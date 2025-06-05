@@ -4,7 +4,7 @@ import glob
 import pandas as pd
 
 from modeling.src.trainer.baselineTrainer import BaselineTrainer
-from modeling.src.utils.utils import get_outputs, get_scaler
+from modeling.src.utils.utils import get_outputs, get_scaler, message_to_slack
 from modeling.src.utils.utils import CFG
 from modeling.src.utils.aws import download_data_from_s3
 
@@ -61,10 +61,12 @@ def run_pm10_train(data_root_path, model_root_path, batch_size, model_name="MULT
     return model, val_loss
 
 def run_temperature_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
-    _, _ = run_temperature_train(data_root_path, model_root_path, batch_size, model_name)
+    _, val_loss = run_temperature_train(data_root_path, model_root_path, batch_size, model_name)
+    message_to_slack(f"temperature val loss : {val_loss}")
 
 def run_pm10_train_on_airflow(data_root_path, model_root_path, batch_size, model_name="MULTI_OUTPUT_LSTM"):
-    _, _ = run_pm10_train(data_root_path, model_root_path, batch_size, model_name)
+    _, val_loss = run_pm10_train(data_root_path, model_root_path, batch_size, model_name)
+    message_to_slack(f"pm10 val loss : {val_loss}")
 
 def run_train(data_root_path, model_root_path, batch_size):
     

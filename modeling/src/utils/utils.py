@@ -1,12 +1,13 @@
-import os
-
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-
 import io
 import os
 import sys
 import glob
+
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+import requests
+import json
+
 
 def get_output_temperature():
     return ["TA_AVG", "TA_MAX", "TA_MIN"]
@@ -37,6 +38,13 @@ def PM_to_df(results, outputs):
         data=[[results[outputs[0]], results[outputs[1]], results[outputs[2]]]],
         columns=outputs
     )
+
+def message_to_slack(message):
+    data = {"text": message}
+    headers = {'Content-type': 'application/json'}
+
+    url = os.getenv('SLACK_WEBHOOK_URL')
+    requests.post(url, data=json.dumps(data), headers=headers)
 
 def project_path():
     return os.path.join(
