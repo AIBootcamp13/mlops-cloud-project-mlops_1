@@ -1,3 +1,4 @@
+# 맨 처음 s3에 데이터 올려져있지 않을 떄 초기 시행(처음 한번만)
 import sys
 import os
 from datetime import datetime
