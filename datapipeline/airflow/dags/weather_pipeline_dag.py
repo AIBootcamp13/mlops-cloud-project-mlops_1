@@ -1,13 +1,17 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.providers.docker.operators.docker import DockerOperator
-
-from datapipeline.src.data_loaders.temp_loader import main as load_temp
-from datapipeline.src.data_loaders.pm10_loader import main as load_pm10
-from datapipeline.src.data_processors.eda_processor import main as run_eda
-
+import pandas as pd
+from src.data_loaders.temp_loader import main as load_temp
+from src.data_loaders.pm10_loader import main as load_pm10
+from src.data_processors.eda_processor import run_eda_for_recent_days
+from src.cloud.s3_uploader import upload_to_s3
 from datapipeline.airflow.utils.slack_notifier import notify_slack
+
+def run_eda_and_upload(execution_date, **kwargs):
+    reference_date = pd.to_datetime(execution_date) + pd.Timedelta(days=1)
+    temp_dates, pm10_dates = run_eda_for_recent_days(days=14, reference_date=reference_date)
+    upload_to_s3(temp_dates, pm10_dates)
 
 default_args = {
     'owner': 'eunbyul',
@@ -37,25 +41,10 @@ with DAG(
         python_callable=load_pm10,
     )
 
-    task_eda = PythonOperator(
-        task_id='run_eda',
-        python_callable=run_eda,
+    task_eda_upload = PythonOperator(
+        task_id='run_eda_and_upload',
+        python_callable=run_eda_and_upload,
+        op_kwargs={'execution_date': '{{ ds }}'},
     )
 
-    task_upload_s3 = DockerOperator(
-        task_id='upload_to_s3_docker',
-        image='upload-script:latest',
-        api_version='auto',
-        auto_remove=True,
-        command='sh -c "PYTHONPATH=/app python src/cloud/upload_script.py --temp_dates=2025-06-01,2025-06-02 --pm10_dates=2025-06-01,2025-06-02"',
-        docker_url='unix://var/run/docker.sock',
-        network_mode='bridge',
-        environment={
-            'AWS_ACCESS_KEY_ID': '{{ var.value.AWS_ACCESS_KEY_ID }}',
-            'AWS_SECRET_ACCESS_KEY': '{{ var.value.AWS_SECRET_ACCESS_KEY }}',
-            'AWS_REGION': '{{ var.value.AWS_REGION }}',
-            'S3_BUCKET_NAME': '{{ var.value.S3_BUCKET_NAME }}',
-        },
-    )
-
-    task_temp >> task_pm10 >> task_eda >> task_upload_s3
+    task_temp >> task_pm10 >> task_eda_upload

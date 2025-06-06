@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from airflow import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 from airflow.utils.dates import days_ago
@@ -17,8 +17,8 @@ default_args = {
 with DAG(
     dag_id='upload_s3_docker_dag',
     default_args=default_args,
-    description='Run S3 upload script via Docker',
-    schedule_interval=None,
+    description='Upload processed weather data to S3 via Docker container',
+    schedule_interval=None,  # 필요 시 '@daily' 등으로 변경
     start_date=days_ago(1),
     catchup=False,
     tags=['mlops', 'docker'],
@@ -29,7 +29,12 @@ with DAG(
         image='294063201644.dkr.ecr.ap-northeast-2.amazonaws.com/upload-script:latest',
         api_version='auto',
         auto_remove=True,
-        command='sh -c "export PYTHONPATH=/app && python src/cloud/upload_script.py --temp_dates=2025-06-01,2025-06-02 --pm10_dates=2025-06-01,2025-06-02"',
+        command=(
+            'sh -c "export PYTHONPATH=/opt/airflow && '
+            'python src/cloud/upload_script.py '
+            '--temp_dates={{ macros.ds_add(ds, -1) }} '
+            '--pm10_dates={{ macros.ds_add(ds, -1) }}"'
+        ),
         docker_url='unix://var/run/docker.sock',
         network_mode='bridge',
         environment={
