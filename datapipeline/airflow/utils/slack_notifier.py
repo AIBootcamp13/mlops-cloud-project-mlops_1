@@ -26,10 +26,10 @@ def notify_slack(context):
             text = ":thermometer: 기온 데이터 수집 완료!"
         elif task_id == 'load_pm10_data':
             text = ":cloud: 미세먼지 데이터 수집 완료!"
-        elif task_id == 'run_eda':
-            text = ":bar_chart: EDA 완료!"
-        elif task_id == 'upload_to_s3_docker':
-            text = ":package: S3 업로드 완료!"
+        elif task_id == 'run_eda_and_upload':
+            text = ":bar_chart: 14일치 EDA 및 S3 업로드 완료!"
+        elif task_id == 'run_full_eda_and_upload':
+            text = ":file_folder: 전체 EDA 및 S3 업로드 완료!"
         else:
             text = f":white_check_mark: `{dag_id}` - `{task_id}` 성공!"
 
