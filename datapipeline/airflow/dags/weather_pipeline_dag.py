@@ -3,10 +3,11 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.docker.operators.docker import DockerOperator
 
-from src.data_loaders.temp_loader import main as load_temp
-from src.data_loaders.pm10_loader import main as load_pm10
-from src.data_processors.eda_processor import main as run_eda
-from src.cloud.s3_uploader import main as upload_s3
+from datapipeline.src.data_loaders.temp_loader import main as load_temp
+from datapipeline.src.data_loaders.pm10_loader import main as load_pm10
+from datapipeline.src.data_processors.eda_processor import main as run_eda
+
+from datapipeline.airflow.utils.slack_notifier import notify_slack
 
 default_args = {
     'owner': 'eunbyul',
@@ -14,12 +15,14 @@ default_args = {
     'start_date': datetime(2024, 1, 1),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
+    'on_failure_callback': notify_slack,
+    'on_success_callback': notify_slack,
 }
 
 with DAG(
     dag_id='weather_pipeline',
     default_args=default_args,
-    schedule_interval='0 4 * * *',  # 매일 04:00에 실행
+    schedule_interval='0 4 * * *',
     catchup=False,
     tags=['mlops'],
 ) as dag:
@@ -48,11 +51,13 @@ with DAG(
         docker_url='unix://var/run/docker.sock',
         network_mode='bridge',
         environment={
-            'AWS_ACCESS_KEY_ID': 'your_key',
-            'AWS_SECRET_ACCESS_KEY': 'your_secret',
-            'AWS_REGION': 'ap-northeast-2',
-            'S3_BUCKET_NAME': 'mlops-pipeline-jeb'
-        }
+            'AWS_ACCESS_KEY_ID': '{{ var.value.AWS_ACCESS_KEY_ID }}',
+            'AWS_SECRET_ACCESS_KEY': '{{ var.value.AWS_SECRET_ACCESS_KEY }}',
+            'AWS_REGION': '{{ var.value.AWS_REGION }}',
+            'S3_BUCKET_NAME': '{{ var.value.S3_BUCKET_NAME }}',
+        },
+        on_failure_callback=notify_slack,
+        on_success_callback=notify_slack,
     )
 
     task_temp >> task_pm10 >> task_eda >> task_upload_s3
