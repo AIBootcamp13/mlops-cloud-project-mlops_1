@@ -4,6 +4,7 @@ from airflow.models import Variable
 
 def notify_slack(context):
     webhook_url = Variable.get("SLACK_WEBHOOK_URL")
+
     dag_id = context.get("dag").dag_id
     task_instance = context.get("task_instance")
     task_id = task_instance.task_id
@@ -11,7 +12,6 @@ def notify_slack(context):
     status = task_instance.state
     log_url = task_instance.log_url
 
-    # 실패 시 상세 메시지
     if status == 'failed':
         message = {
             "text": f":x: *Task Failed!*\n"
@@ -21,17 +21,28 @@ def notify_slack(context):
                     f"*Log URL*: <{log_url}|View Logs>"
         }
 
-    # 성공 시 간단 메시지
     elif status == 'success':
-        message = {
-            "text": f":white_check_mark: `{dag_id}` DAG 성공 완료!"
-        }
+        if task_id == 'load_temperature_data':
+            text = ":thermometer: 기온 데이터 수집 완료!"
+        elif task_id == 'load_pm10_data':
+            text = ":cloud: 미세먼지 데이터 수집 완료!"
+        elif task_id == 'run_eda':
+            text = ":bar_chart: EDA 완료!"
+        elif task_id == 'upload_to_s3_docker':
+            text = ":package: S3 업로드 완료!"
+        else:
+            text = f":white_check_mark: `{dag_id}` - `{task_id}` 성공!"
 
-    # 기타 상태 (optional)
+        message = {"text": text}
+
     else:
         message = {
             "text": f":grey_question: `{dag_id}` - `{task_id}` Task 상태: `{status}`"
         }
 
     headers = {"Content-Type": "application/json"}
-    requests.post(webhook_url, data=json.dumps(message), headers=headers)
+    try:
+        response = requests.post(webhook_url, data=json.dumps(message), headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Slack notification failed: {e}")

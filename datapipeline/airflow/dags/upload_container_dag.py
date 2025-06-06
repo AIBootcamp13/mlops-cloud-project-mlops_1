@@ -38,6 +38,4 @@ with DAG(
             'AWS_REGION': '{{ var.value.AWS_REGION }}',
             'S3_BUCKET_NAME': '{{ var.value.S3_BUCKET_NAME }}',
         },
-        on_failure_callback=notify_slack,
-        on_success_callback=notify_slack,
     )
