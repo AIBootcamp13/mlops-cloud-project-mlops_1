@@ -9,7 +9,7 @@ from src.cloud.s3_uploader import upload_to_s3
 from datapipeline.airflow.utils.slack_notifier import notify_slack
 
 def run_eda_and_upload(execution_date, **kwargs):
-    reference_date = pd.to_datetime(execution_date) + pd.Timedelta(days=1)
+    reference_date = pd.to_datetime(execution_date)
     temp_dates, pm10_dates = run_eda_for_recent_days(days=14, reference_date=reference_date)
     upload_to_s3(temp_dates, pm10_dates)
 

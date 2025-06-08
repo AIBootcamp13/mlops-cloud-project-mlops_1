@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r upload_requirements.txt
 COPY ./src /app/src
 
 # 환경변수로 PYTHONPATH 지정
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
 
 # 실행 커맨드
-CMD ["python", "src/cloud/upload_script.py"]
+CMD ["python", "cloud/upload_script.py"]
