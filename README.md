@@ -34,10 +34,15 @@
 
 ## 개발 환경 및 기술 스택    
 ● 주 언어 : python, FastAPI, React    
+
 ● 데이터: 기상청 API    
+
 ● 버전 및 이슈관리 : github    
+
 ● 협업 툴 : github, notion, discord    
+
 ● 자동화: Airflow, AWS S3, Docker    
+
 ● 모델링: scikit-learn, XGBoost    
 
 <br>
@@ -105,6 +110,7 @@
 ● 모델은 S3 데이터를 기반으로 예측    
 ● S3 업로드 위치    
     – AWS S3 버킷: mlops-pipeline-jeb    
+    
 ● S3 저장경로    
 ```
 result/temperature/date=YYYY-MM/YYYY–MM-DD.csv
