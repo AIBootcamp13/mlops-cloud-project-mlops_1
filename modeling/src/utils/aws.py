@@ -97,10 +97,10 @@ def download_data_from_s3(data_root_path, data_name):
     now = datetime.now(kst).strftime('%Y%m%d_%H%M%S')
     ymd = datetime.now(kst).strftime('%Y%m%d')
 
-    data_files = glob.glob(os.path.join(data_root_path, f'{ymd}_*_{data_name}_data.csv'))
+    data_files = glob.glob(os.path.join(data_root_path, f'*_{data_name}_data.csv'))
 
     if data_files:
-        print(f'{ymd}_{data_name}_data.csv Exists!!')
+        print(f'{data_name}_data.csv Exists!!')
         return
 
     bucket_name = 'mlops-pipeline-jeb'
