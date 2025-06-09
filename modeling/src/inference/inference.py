@@ -42,7 +42,11 @@ def run_inference_temperature(data_root_path, model_root_path, batch_size=64):
 
     window_size = CFG['WINDOW_SIZE']
 
-    data_path = os.path.join(data_root_path, 'TA_data.csv')
+    files = glob.glob(os.path.join(data_root_path, "*_temperature_data.csv"))
+    files.sort(key=os.path.getmtime)
+    latest_anomalies_file = files[-1]
+
+    data_path = os.path.join(data_root_path, latest_anomalies_file)
     model_path = os.path.join(model_root_path, 'lstm_temperature.pth')
 
     outputs_temperature, outputs_PM = get_outputs()
@@ -65,12 +69,12 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
 
     window_size = CFG['WINDOW_SIZE']
 
-    files = glob.glob(os.path.join(data_root_path, "*_PM10_data.csv"))
+    files = glob.glob(os.path.join(data_root_path, "*_pm10_data.csv"))
     files.sort(key=os.path.getmtime)
     latest_anomalies_file = files[-1]
 
     data_path = os.path.join(data_root_path, latest_anomalies_file)
-    model_path = os.path.join(model_root_path, 'lstm_PM.pth')
+    model_path = os.path.join(model_root_path, 'lstm_pm10.pth')
 
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_PM)
