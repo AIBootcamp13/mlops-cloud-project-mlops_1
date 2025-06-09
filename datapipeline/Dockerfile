@@ -14,5 +14,5 @@ COPY ./src /app/src
 # 환경변수로 PYTHONPATH 지정
 ENV PYTHONPATH=/app/src
 
-# 실행 커맨드
-CMD ["python", "cloud/upload_script.py"]
+# ENTRYPOINT로 유연하게 실행 가능하게 변경
+ENTRYPOINT ["python"]

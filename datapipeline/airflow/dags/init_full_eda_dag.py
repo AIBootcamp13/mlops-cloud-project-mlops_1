@@ -19,7 +19,7 @@ def run_and_upload():
 
 # DAG 설정
 default_args = {
-    'owner': 'airflow',
+    'owner': 'eunbyul',
     'start_date': datetime(2024, 1, 1),
     'retries': 1,
 }

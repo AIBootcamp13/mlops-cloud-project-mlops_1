@@ -1,15 +1,19 @@
 import os
+from dotenv import load_dotenv
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv()
 
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-RAW_DIR = os.path.join(DATA_DIR, 'raw')
-PROCESSED_DIR = os.path.join(DATA_DIR, 'processed')
+# S3 환경 변수
+S3_BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+AWS_REGION = os.getenv("AWS_REGION")
 
-TA_RAW_FILE = os.path.join(RAW_DIR, 'data1.csv')
-TA_PROCESSED_FILE = os.path.join(PROCESSED_DIR, 'TA_data.csv')
-TA_MODEL_FILE = os.path.join(PROCESSED_DIR, 'modeling_TA_data.csv')
+# S3 업로드 경로 (폴더 형식)
+S3_TEMP_FOLDER = "results/temperature/"
+S3_PM10_FOLDER = "results/pm10/"
 
-PM10_RAW_FILE = os.path.join(RAW_DIR, 'data2.csv')
-PM10_PROCESSED_FILE = os.path.join(PROCESSED_DIR, 'PM10_data.csv')
-PM10_MODEL_FILE = os.path.join(PROCESSED_DIR, 'modeling_PM10_data.csv')
+# API Key
+TEMP_API_KEY = os.getenv("TEMP_API_KEY")
+AD_API_KEY = os.getenv("AD_API_KEY")
+
+# Slack
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")

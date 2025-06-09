@@ -1,22 +1,28 @@
 from datetime import datetime, timedelta
+from pendulum import timezone
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 import pandas as pd
-from src.data_loaders.temp_loader import main as load_temp
-from src.data_loaders.pm10_loader import main as load_pm10
-from src.data_processors.eda_processor import run_eda_for_recent_days
-from src.cloud.s3_uploader import upload_to_s3
+
+from src.data_loaders.temp_loader import run_temp_preprocessing as load_temp
+from src.data_loaders.pm10_loader import run_pm10_preprocessing as load_pm10
+from src.data_processors.eda_processor import run_eda_for_recent_days_with_fetch
+from src.cloud.s3_uploader import upload_processed_data_to_s3
+
 from datapipeline.airflow.utils.slack_notifier import notify_slack
 
-def run_eda_and_upload(execution_date, **kwargs):
-    reference_date = pd.to_datetime(execution_date)
-    temp_dates, pm10_dates = run_eda_for_recent_days(days=14, reference_date=reference_date)
-    upload_to_s3(temp_dates, pm10_dates)
+# 실행 기준 날짜에서 하루 전을 기준으로 EDA 진행
+def run_eda_and_upload(**context):
+    ds = context['ds']
+    reference_date = pd.to_datetime(ds) - pd.Timedelta(days=1)
+
+    df_temp, df_pm10 = run_eda_for_recent_days_with_fetch(days=14, reference_date=reference_date)
+    upload_processed_data_to_s3(df_temp, df_pm10)
 
 default_args = {
     'owner': 'eunbyul',
     'depends_on_past': False,
-    'start_date': datetime(2024, 1, 1),
+    'start_date': datetime(2024, 1, 1, tzinfo=timezone("Asia/Seoul")),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
     'on_failure_callback': notify_slack,
@@ -26,7 +32,7 @@ default_args = {
 with DAG(
     dag_id='weather_pipeline',
     default_args=default_args,
-    schedule_interval='0 4 * * *',
+    schedule_interval='0 4 * * *',  # 매일 오전 4시
     catchup=False,
     tags=['mlops'],
 ) as dag:
@@ -44,7 +50,7 @@ with DAG(
     task_eda_upload = PythonOperator(
         task_id='run_eda_and_upload',
         python_callable=run_eda_and_upload,
-        op_kwargs={'execution_date': '{{ ds }}'},
+        provide_context=True,
     )
 
     task_temp >> task_pm10 >> task_eda_upload

@@ -1,31 +1,18 @@
-import os
 import pandas as pd
 import numpy as np
 from datetime import date, timedelta
-from src.config.settings import (
-    TA_PROCESSED_FILE, TA_MODEL_FILE, PM10_PROCESSED_FILE, PM10_MODEL_FILE
-)
+from src.data_loaders.temp_loader import run_temp_preprocessing
+from src.data_loaders.pm10_loader import run_pm10_preprocessing
 
 PM10_AVG_THRESHOLD = 90.8
 PM10_MAX_THRESHOLD = 160.5
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMP_DIR = os.path.join(BASE_DIR, 'data', 'processed', 'temperature')
-PM10_DIR = os.path.join(BASE_DIR, 'data', 'processed', 'pm10')
-os.makedirs(TEMP_DIR, exist_ok=True)
-os.makedirs(PM10_DIR, exist_ok=True)
-
-def load_data():
-    df_ta = pd.read_csv(TA_PROCESSED_FILE, parse_dates=['date'])
-    df_pm10 = pd.read_csv(PM10_PROCESSED_FILE, parse_dates=['date'])
-    return df_ta, df_pm10
 
 def preprocess_temperature(df_ta, days=None, reference_date=None):
     if reference_date is None:
         reference_date = pd.to_datetime(date.today())
     if days:
         start_date = reference_date - timedelta(days=days)
-        df_ta = df_ta[(df_ta['date'] < reference_date) & (df_ta['date'] >= start_date)]
+        df_ta = df_ta[(df_ta['date'] <= reference_date) & (df_ta['date'] >= start_date)]
     df_ta = df_ta.replace(-99.0, np.nan)
     df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']] = df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']].astype('float32')
     return df_ta
@@ -38,7 +25,7 @@ def preprocess_pm10(df_pm10, days=None, reference_date=None):
         reference_date = pd.to_datetime(date.today())
     if days:
         start_date = reference_date - timedelta(days=days)
-        df_pm10 = df_pm10[(df_pm10['date'] < reference_date) & (df_pm10['date'] >= start_date)]
+        df_pm10 = df_pm10[(df_pm10['date'] <= reference_date) & (df_pm10['date'] >= start_date)]
     return df_pm10
 
 def process_pm10_outliers(df_pm10):
@@ -55,43 +42,17 @@ def process_pm10_outliers(df_pm10):
     ].astype('float32')
     return df_pm10_filtered
 
-def save_if_changed(df, path):
-    if os.path.exists(path):
-        old_df = pd.read_csv(path)
-        if df.equals(old_df):
-            return False
-    df.to_csv(path, index=False)
-    return True
-
-def save_interpolated_temperature(df):
-    save_if_changed(df, TA_MODEL_FILE)
-    saved_dates = []
-    for date_value, group in df.groupby('date'):
-        date_str = pd.to_datetime(date_value).strftime('%Y-%m-%d')
-        save_path = os.path.join(TEMP_DIR, f'{date_str}.csv')
-        if save_if_changed(group, save_path):
-            saved_dates.append(date_str)
-    return saved_dates
-
-def save_processed_pm10(df):
-    save_if_changed(df, PM10_MODEL_FILE)
-    saved_dates = []
-    for date_value, group in df.groupby('date'):
-        date_str = pd.to_datetime(date_value).strftime('%Y-%m-%d')
-        save_path = os.path.join(PM10_DIR, f'{date_str}.csv')
-        if save_if_changed(group, save_path):
-            saved_dates.append(date_str)
-    return saved_dates
-
-def run_eda_for_recent_days(days=14, reference_date=None):
+def run_eda_for_recent_days(df_ta, df_pm10, days=14, reference_date=None):
     if reference_date is None:
         reference_date = pd.to_datetime(date.today())
-    df_ta, df_pm10 = load_data()
     df_ta_interp = interpolate_temperature(preprocess_temperature(df_ta, days, reference_date))
     df_pm10_filtered = process_pm10_outliers(preprocess_pm10(df_pm10, days, reference_date))
-    saved_temp_dates = save_interpolated_temperature(df_ta_interp)
-    saved_pm10_dates = save_processed_pm10(df_pm10_filtered)
-    return saved_temp_dates, saved_pm10_dates
+    return df_ta_interp, df_pm10_filtered
 
-def run_full_eda():
-    return run_eda_for_recent_days(days=None)
+def run_full_eda(df_ta, df_pm10):
+    return run_eda_for_recent_days(df_ta, df_pm10, days=None)
+
+def run_eda_for_recent_days_with_fetch(days=14, reference_date=None):
+    df_ta = run_temp_preprocessing()
+    df_pm10 = run_pm10_preprocessing()
+    return run_eda_for_recent_days(df_ta, df_pm10, days, reference_date)

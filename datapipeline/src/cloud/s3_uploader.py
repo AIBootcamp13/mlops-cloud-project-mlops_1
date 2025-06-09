@@ -1,77 +1,85 @@
 import os
+import io
 import boto3
+import pandas as pd
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
-import io
-import pandas as pd
+from src.data_processors.eda_processor import run_eda_for_recent_days
+from src.data_processors.eda_processor import run_eda_for_recent_days_with_fetch
 
-def upload_to_s3(temp_dates, pm10_dates):
-    load_dotenv()
+# 환경 변수 로드
+load_dotenv()
 
-    AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-    AWS_REGION = os.getenv('AWS_REGION', 'ap-northeast-2')
-    S3_BUCKET = os.getenv('S3_BUCKET_NAME', 'mlops-pipeline-jeb')
+AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_REGION = os.getenv('AWS_REGION', 'ap-northeast-2')
+S3_BUCKET = os.getenv('S3_BUCKET_NAME', 'mlops-pipeline-jeb')
 
-    s3 = boto3.client(
-        's3',
-        aws_access_key_id=AWS_ACCESS_KEY,
-        aws_secret_access_key=AWS_SECRET_KEY,
-        region_name=AWS_REGION
-    )
+# boto3 클라이언트 설정
+s3 = boto3.client(
+    's3',
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=AWS_REGION
+)
 
+# 개별 행 단위로 S3에 업로드
+def upload_df_to_s3(df: pd.DataFrame, s3_prefix: str, date_col: str = 'date'):
     uploaded, skipped, failed = 0, 0, []
-    targets = [
-        ("temperature", temp_dates, "./src/data/processed/temperature", "results/temperature"),
-        ("pm10", pm10_dates, "./src/data/processed/pm10", "results/pm10")
-    ]
 
-    for category, dates, local_dir, s3_prefix in targets:
-        for date_str in dates:
-            local_path = os.path.join(local_dir, f"{date_str}.csv")
-            if not os.path.exists(local_path):
-                print(f"❌ Local file not found: {local_path}")
-                continue
+    for _, row in df.iterrows():
+        date = row[date_col]
+        if pd.isna(date):
+            continue
 
-            try:
-                df_local = pd.read_csv(local_path)
-            except Exception as err:
-                failed.append((local_path, f"Read error: {err}"))
-                continue
+        date_str = pd.to_datetime(date).strftime('%Y-%m-%d')
+        year_month = pd.to_datetime(date).strftime('%Y-%m')
 
-            s3_key = f"{s3_prefix}/date={date_str[:7]}/{date_str}.csv"
-            need_upload = True
+        single_df = pd.DataFrame([row])
+        csv_buffer = io.StringIO()
+        single_df.to_csv(csv_buffer, index=False)
 
-            # S3 파일이 존재하고 내용이 동일하면 skip
+        s3_key = f"{s3_prefix}/date={year_month}/{date_str}.csv"
+
+        try:
+            # 중복 여부 확인
             try:
                 obj = s3.get_object(Bucket=S3_BUCKET, Key=s3_key)
-                df_s3 = pd.read_csv(io.BytesIO(obj['Body'].read()))
-                if df_local.equals(df_s3):
-                    need_upload = False
+                df_existing = pd.read_csv(io.BytesIO(obj['Body'].read()))
+                if df_existing.equals(single_df):
                     skipped += 1
+                    continue
             except ClientError as e:
                 if e.response['Error']['Code'] != 'NoSuchKey':
-                    failed.append((s3_key, str(e)))
-                    continue  # 다른 오류는 실패로 간주
+                    raise
 
-            # 내용이 다르거나 처음 업로드라면 put
-            if need_upload:
-                try:
-                    csv_buffer = io.StringIO()
-                    df_local.to_csv(csv_buffer, index=False)
-                    s3.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=csv_buffer.getvalue())
-                    uploaded += 1
-                except Exception as err:
-                    failed.append((s3_key, f"Upload error: {err}"))
+            # 업로드 실행
+            s3.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=csv_buffer.getvalue())
+            uploaded += 1
 
+        except Exception as err:
+            failed.append((s3_key, str(err)))
+
+    # 업로드 요약 출력
     print("\n==== [S3 Upload Summary] ====")
     print(f"Uploaded: {uploaded}")
     print(f"Skipped : {skipped}")
     print(f"Failed  : {len(failed)}")
-
     if failed:
         for f, msg in failed:
             print(f"  - {f}: {msg}")
 
-def main(temp_dates, pm10_dates):
-    return upload_to_s3(temp_dates, pm10_dates)
+# 온도/미세먼지 DataFrame 두 개를 각각 업로드
+def upload_processed_data_to_s3(df_temp: pd.DataFrame, df_pm10: pd.DataFrame):
+    upload_df_to_s3(df_temp, s3_prefix="results/temperature", date_col='date')
+    upload_df_to_s3(df_pm10, s3_prefix="results/pm10", date_col='date')
+
+# 외부에서 DF 받으면 EDA → S3 업로드
+def upload_to_s3(df_ta: pd.DataFrame, df_pm10: pd.DataFrame):
+    df_temp, df_pm10 = run_eda_for_recent_days(df_ta, df_pm10)
+    upload_processed_data_to_s3(df_temp, df_pm10)
+
+# 내부에서 전처리 + EDA → S3 업로드    
+def upload_to_s3_for_recent_days(days=14, reference_date=None):
+    df_temp, df_pm10 = run_eda_for_recent_days_with_fetch(days, reference_date)
+    upload_processed_data_to_s3(df_temp, df_pm10)
