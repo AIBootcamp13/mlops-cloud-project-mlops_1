@@ -20,7 +20,7 @@
 
 ## 팀 구성원
 
-| ![박진일]((https://github.com/user-attachments/assets/551cb3b6-c019-4e50-a35b-1843d3e474a3) | ![이민우](https://github.com/user-attachments/assets/b71c7815-e0c7-407f-b593-121e11c61d05) | ![조은별](https://github.com/user-attachments/assets/781faa65-c309-49ee-b58a-9cc08b13b69c) | ![조재형](https://github.com/user-attachments/assets/c7d4d78c-36ae-4fb1-bbd4-105ee9d722cc) |
+| ![박진일](https://github.com/user-attachments/assets/551cb3b6-c019-4e50-a35b-1843d3e474a3) | ![이민우](https://github.com/user-attachments/assets/b71c7815-e0c7-407f-b593-121e11c61d05) | ![조은별](https://github.com/user-attachments/assets/781faa65-c309-49ee-b58a-9cc08b13b69c) | ![조재형](https://github.com/user-attachments/assets/c7d4d78c-36ae-4fb1-bbd4-105ee9d722cc) |
 | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: |
 |            [박진일](https://github.com/UpstageAILab)             |            [이민우](https://github.com/UpstageAILab)             |            [조은별](https://github.com/UpstageAILab)             |            [조재형](https://github.com/UpstageAILab)             |
 |                            팀장, PM               |                            모델링 파이프라인 자동화         |                            데이터 파이프라인 자동화                  |                            모델 서빙 자동화 및 배포                           |
@@ -40,7 +40,7 @@
 <br>
 
 ## 아키텍쳐 설계
-![기술스텍_아키텍처.jpg](https://imgur.com/a/qr5aok1)
+![기술스텍 아키텍처](https://i.imgur.com/il6vU8j.jpeg)
 
 <br>
 
@@ -85,12 +85,14 @@
 ### 데이터셋 수집
 - request 기반 API 호출 스크립트 작성 (Python)
 - 온도/미세먼지 각각 수집 모듈 구현 → csv 저장
+<br>
 
 ### 데이터 전처리
 - 기온 데이터의 -99.0 → 결측치 처리 및 시간 보간
 - 1953–1957 단절 구간 자동 누락 처리
 - 미세먼지 PM10 평균 > 90.8 → 이상치 필터링
 - PM10 최대 > 160.5 → clip 처리
+<br>
 
 ### 클라우드 연동
 - AWS S3 저장: 파티셔닝 → 날짜 기반 저장
@@ -105,19 +107,21 @@ YYY-MM/YYYY–MM-DD.csv
 result/pm10/data=YYYY-M
 M/YYYY-MM-DD.csv
 ```
+<br>
 
 ### 데이터파이프라인 자동화 (Airflow)
 - DAG ID: weather_pipeline
 - 스케줄
     - 매일 오전 4시 (KST 기준)
     - 처리 결과 -> slack 알림
-![DAG](https://imgur.com/a/5ynSq1U)
+![DAG](https://i.imgur.com/HxRSUr8.jpeg)
 ![데이터파이프라인 슬랙 알림](https://imgur.com/a/9D4rmE6)
 - Task 흐름
     1. load_temperature_data
     2. load_pm10_data
     3. run_eda_and_upload
 ![데이터파이프라인 테스크g](https://imgur.com/a/xbz3tCa)
+<br>
 
 ### Modeling
 - 환경 구성
@@ -137,6 +141,7 @@ M/YYYY-MM-DD.csv
     ● alias을 활용하여 모델 버전 관리
 - 모니터링
     ● slack과 연동하여 시간 모델 성능 모니터
+<br>
 
 * mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙
 ![화면 캡처 2025-06-09 232414.jpg](attachment:01ad19e6-3a11-4a70-a7d8-521470818fdc:화면_캡처_2025-06-09_232414.jpg)
@@ -150,6 +155,7 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 ![화면 캡처 2025-06-09 231833.jpg](attachment:05f92169-5135-4a96-8319-3389ac0a9b3e:화면_캡처_2025-06-09_231833.jpg)
 ![화면 캡처 2025-06-09 231919.jpg](attachment:9802dcbf-08bd-4ca1-b961-5bbb85404303:화면_캡처_2025-06-09_231919.jpg)
 
+<br>
 ### API & Web Serving
 - 사용한 모델:
     - FestAPI를 사용한 예측 API 제공
