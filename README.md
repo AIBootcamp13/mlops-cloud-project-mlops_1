@@ -32,13 +32,13 @@
 
 <br>
 
-## 개발 환경 및 기술 스택
-● 주 언어 : python, FastAPI, React
-● 데이터: 기상청 API
-● 버전 및 이슈관리 : github
-● 협업 툴 : github, notion, discord
-● 자동화: Airflow, AWS S3, Docker
-● 모델링: scikit-learn, XGBoost
+## 개발 환경 및 기술 스택    
+● 주 언어 : python, FastAPI, React    
+● 데이터: 기상청 API    
+● 버전 및 이슈관리 : github    
+● 협업 툴 : github, notion, discord    
+● 자동화: Airflow, AWS S3, Docker    
+● 모델링: scikit-learn, XGBoost    
 
 <br>
 
@@ -71,41 +71,41 @@
 ## 사용 데이터셋 개요
 ### 기상청 API 허브 (https://apihub.kma.go.kr/)
 
-### 온도 데이터
-● 이름: 종관기상관측(ASOS)
-● 항목: 일별 평균기온, 최고기온, 최저기온
-● 기간: 1907.10.01 ~ 현재
+### 온도 데이터    
+● 이름: 종관기상관측(ASOS)    
+● 항목: 일별 평균기온, 최고기온, 최저기온    
+● 기간: 1907.10.01 ~ 현재    
 
 ### 미세먼지(PM10) 데이터
-● 이름: 황사관측(PM10)
-● 항목: 부유분진농도 (PM10)
-● 기간: 2008.04.28 ~ 현재
-● 생산주기: 5분 단위 수집 → 일 단위로 평균/최대/최소 집계 하여생성
+● 이름: 황사관측(PM10)    
+● 항목: 부유분진농도 (PM10)    
+● 기간: 2008.04.28 ~ 현재    
+● 생산주기: 5분 단위 수집 → 일 단위로 평균/최대/최소 집계 하여생성    
 
 ### 활용방식
-● 각 날짜별로 서울 지역(108지점) 기온 및 미세먼지 정보를 수집
-● API 응답 데이터를 바탕으로 CSV 가공 후 S3 업로드 자동화
+● 각 날짜별로 서울 지역(108지점) 기온 및 미세먼지 정보를 수집    
+● API 응답 데이터를 바탕으로 CSV 가공 후 S3 업로드 자동화    
 
 <br>
 
 ## 구현 기능
 ### Datapipeline
 #### 데이터 수집
-● request 기반 API 호출 스크립트 작성 (Python)
-● 온도/미세먼지 각각 수집 모듈 구현 → csv 저장
+● request 기반 API 호출 스크립트 작성 (Python)    
+● 온도/미세먼지 각각 수집 모듈 구현 → csv 저장    
 
 #### 데이터 전처리
-● 기온 데이터의 -99.0 → 결측치 처리 및 시간 보간
-● 1953–1957 단절 구간 자동 누락 처리
-● 미세먼지 PM10 평균 > 90.8 → 이상치 필터링
-● PM10 최대 > 160.5 → clip 처리
+● 기온 데이터의 -99.0 → 결측치 처리 및 시간 보간     
+● 1953–1957 단절 구간 자동 누락 처리    
+● 미세먼지 PM10 평균 > 90.8 → 이상치 필터링    
+● PM10 최대 > 160.5 → clip 처리    
 
 #### 클라우드 연동
-● AWS S3 저장: 파티셔닝 → 날짜 기반 저장
-● 모델은 S3 데이터를 기반으로 예측
-● S3 업로드 위치
-    – AWS S3 버킷: mlops-pipeline-jeb
-● S3 저장경로
+● AWS S3 저장: 파티셔닝 → 날짜 기반 저장    
+● 모델은 S3 데이터를 기반으로 예측    
+● S3 업로드 위치    
+    – AWS S3 버킷: mlops-pipeline-jeb    
+● S3 저장경로    
 ```
 result/temperature/date=YYYY-MM/YYYY–MM-DD.csv
 
@@ -113,50 +113,50 @@ result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 ```
 
 #### 데이터파이프라인 자동화 (Airflow)
-● DAG ID: weather_pipeline
-● 스케줄
-    - 매일 오전 4시 (KST 기준)
-    - 처리 결과 -> slack 알림
+● DAG ID: weather_pipeline     
+● 스케줄    
+    - 매일 오전 4시 (KST 기준)    
+    - 처리 결과 -> slack 알림    
 ![DAG](https://i.imgur.com/HxRSUr8.jpeg)
-![데이터파이프라인 슬랙 알림](https://i.imgur.com/wfESasB.jpeg)
-● Task 흐름
-    1. load_temperature_data
-    2. load_pm10_data
-    3. run_eda_and_upload
+![데이터파이프라인 슬랙 알림](https://i.imgur.com/wfESasB.jpeg)    
+● Task 흐름    
+    1. load_temperature_data    
+    2. load_pm10_data    
+    3. run_eda_and_upload    
 ![데이터파이프라인 테스크](https://i.imgur.com/Wmq1Ksr.jpeg)
 
 <br>
 
 ### Modeling
 #### 환경 구성
-● AWS EC2 클라우드 환경에서 mlops 모델링 개발
-● Ai stages gpu server에서 모델 학습
-● Docker: train, inference 환경을 통일하기 위해 사용
-● Docker-compose : airflow, mlflow 등 여러 container 기반 서비스 통합 관리
+● AWS EC2 클라우드 환경에서 mlops 모델링 개발    
+● Ai stages gpu server에서 모델 학습     
+● Docker: train, inference 환경을 통일하기 위해 사용    
+● Docker-compose : airflow, mlflow 등 여러 container 기반 서비스 통합 관리    
 
-#### 모델 학습 및 배포
-● lstm 기반 시계열 예측 모델 구현
-● FastAPI를 이용해 inference api 배포
+#### 모델 학습 및 배포    
+● lstm 기반 시계열 예측 모델 구현    
+● FastAPI를 이용해 inference api 배포    
 
 #### Airflow 자동화
-● 모델 학습 -> 이상치 감지 -> 트리거 기반 재학습 자동화 구축
-● DAG를 통해 일관된 재학습 루틴 구축
+● 모델 학습 -> 이상치 감지 -> 트리거 기반 재학습 자동화 구축    
+● DAG를 통해 일관된 재학습 루틴 구축    
 
  #### MLflow
-● 실험별 성능 시각화 (batch size, model 종류에 따른 val loss)
-● 학습된 모델을 model registry에 등록
-● alias을 활용하여 모델 버전 관리
+● 실험별 성능 시각화 (batch size, model 종류에 따른 val loss)    
+● 학습된 모델을 model registry에 등록    
+● alias을 활용하여 모델 버전 관리    
 
 #### 모니터링
-● slack과 연동하여 시간 모델 성능 모니터
+● slack과 연동하여 시간 모델 성능 모니터    
 
-mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙
+mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙    
 ![https://i.imgur.com/71vggwp.jpeg](https://i.imgur.com/71vggwp.jpeg)
 ![https://i.imgur.com/2OeomSD.jpeg](https://i.imgur.com/2OeomSD.jpeg)
-
-airflow 기반 모델 재학습 자동화 파이프라인
+<br>
+airflow 기반 모델 재학습 자동화 파이프라인    
 ![https://i.imgur.com/Sf4UxCx.jpeg](https://i.imgur.com/Sf4UxCx.jpeg)
-
+<br>
 Slack과 연동하여 실시간 모델 성능 모니터링
 ![https://i.imgur.com/kaFCMuH.jpeg](https://i.imgur.com/kaFCMuH.jpeg)
 ![https://i.imgur.com/u2ZhV60.jpeg](https://i.imgur.com/u2ZhV60.jpeg)
@@ -165,27 +165,26 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 
 ### API & Web Serving
 #### 사용한 모델:
-● FestAPI를 사용한 예측 API 제공
-● React를 활용한 사용자 페이지 구현
-● API 호출 예시 (기온 및 미세먼지 예측값 표시)
+● FestAPI를 사용한 예측 API 제공      
+● React를 활용한 사용자 페이지 구현    
+● API 호출 예시 (기온 및 미세먼지 예측값 표시)    
 
 #### 배포 과정 :
-● 사전 학습된 모델을 fastAPI 서버에서로드하여 예측 요청을 받을 수 있는 API /result를 구성합니다.
-● 사용자 웹페이지(React)에서 이 API를 호출하여 매일 새벽에 자동으로저장된 예측 결과를 시각화합니다
+● 사전 학습된 모델을 fastAPI 서버에서로드하여 예측 요청을 받을 수 있는 API /result를 구성합니다.    
+● 사용자 웹페이지(React)에서 이 API를 호출하여 매일 새벽에 자동으로저장된 예측 결과를 시각화합니다    
 
 #### 배치 서빙을 위한 Airflow 사용:
-● 모델 예측 자동화 : 매일 새벽 5시(KST 기준) Airflow DAG를 통해 S3에서 모델 다운로드 -> 예측 수행 -> 결과 저장 자동화
-● 입력 데이터 예측 및 저장 : 버킷에 저장된 최신 입력 데이터를 기반으로 기온 및 미세먼지 예측 결과를 .csv로 저장 -> 이후 FastAPI가 해당 결과를 읽어 사용자에게 제공
-
+● 모델 예측 자동화 : 매일 새벽 5시(KST 기준) Airflow DAG를 통해 S3에서 모델 다운로드 -> 예측 수행 -> 결과 저장 자동화    
+● 입력 데이터 예측 및 저장 : 버킷에 저장된 최신 입력 데이터를 기반으로 기온 및 미세먼지 예측 결과를 .csv로 저장 -> 이후 FastAPI가 해당 결과를 읽어 사용자에게 제공    
 ![https://i.imgur.com/EXmhb8N.jpeg](https://i.imgur.com/EXmhb8N.jpeg)
 
 <br>
 
 ### 모니터링
 #### 성능 개선 변화 추이
-● Airflow DAG 실행 성공 여부, 로그 및 결과 파일 저장 상태 추적
-● FastAPI /result API 응답 상태 실시간 로그 모니터링
-● 예측 실패 시 빠르게 원인 파악(모델 미로드. 데이터 누락, 등)
-● 프론트에서 실시간 예측 결과 출력 및 오류 메세지 대응
+● Airflow DAG 실행 성공 여부, 로그 및 결과 파일 저장 상태 추적    
+● FastAPI /result API 응답 상태 실시간 로그 모니터링    
+● 예측 실패 시 빠르게 원인 파악(모델 미로드. 데이터 누락, 등)    
+● 프론트에서 실시간 예측 결과 출력 및 오류 메세지 대응    
 
 ![https://i.imgur.com/vd0TciN.jpeg](https://i.imgur.com/vd0TciN.jpeg)
