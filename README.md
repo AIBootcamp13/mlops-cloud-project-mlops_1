@@ -2,8 +2,8 @@
 
 <br>
 
-## 프로젝트 소개
-### <서울시의 일일 기온 및 미세먼지를 예측하여 웹 페이지에 자동 업데이트하는 AI 기반 MLOps 프로젝트>
+# 프로젝트 소개
+## <서울시의 일일 기온 및 미세먼지를 예측하여 웹 페이지에 자동 업데이트하는 AI 기반 MLOps 프로젝트>
 ● 목표 : Datapipeline, Modeling, Serving 컴포넌트의 자동화 구현 (데이터 전처리부터 모델 서빙까지의 경험)
 
 ● 프로젝트 진행 기간: 2025. 05. 26 - 2025. 06. 10
@@ -21,7 +21,7 @@
 
 <br>
 
-## 팀 구성원
+# 팀 구성원
 
 | ![박진일](https://github.com/user-attachments/assets/551cb3b6-c019-4e50-a35b-1843d3e474a3) | ![이민우](https://github.com/user-attachments/assets/b71c7815-e0c7-407f-b593-121e11c61d05) | ![조은별](https://github.com/user-attachments/assets/781faa65-c309-49ee-b58a-9cc08b13b69c) | ![조재형](https://github.com/user-attachments/assets/c7d4d78c-36ae-4fb1-bbd4-105ee9d722cc) |
 | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: |
@@ -32,7 +32,7 @@
 
 <br>
 
-## 개발 환경 및 기술 스택    
+# 개발 환경 및 기술 스택    
 ● 주 언어 : python, FastAPI, React    
 
 ● 데이터: 기상청 API    
@@ -47,12 +47,12 @@
 
 <br>
 
-## 아키텍쳐 설계
+# 아키텍쳐 설계
 ![기술스텍 아키텍처](https://i.imgur.com/il6vU8j.jpeg)
 
 <br>
 
-## 프로젝트 구조
+# 프로젝트 구조
 ```
 ├── datapipeline
 │   ├── airflow/
@@ -73,8 +73,8 @@
 
 <br>
 
-## 사용 데이터셋 개요
-### 기상청 API 허브 (https://apihub.kma.go.kr/)
+# 사용 데이터셋 개요
+## 기상청 API 허브 (https://apihub.kma.go.kr/)
 
 ### 온도 데이터    
 ● 이름: 종관기상관측(ASOS)    
@@ -93,19 +93,19 @@
 
 <br>
 
-## 구현 기능
-### Datapipeline
-#### 데이터 수집
+# 구현 기능
+## Datapipeline
+### 데이터 수집
 ● request 기반 API 호출 스크립트 작성 (Python)    
 ● 온도/미세먼지 각각 수집 모듈 구현 → csv 저장    
 
-#### 데이터 전처리
+### 데이터 전처리
 ● 기온 데이터의 -99.0 → 결측치 처리 및 시간 보간     
 ● 1953–1957 단절 구간 자동 누락 처리    
 ● 미세먼지 PM10 평균 > 90.8 → 이상치 필터링    
 ● PM10 최대 > 160.5 → clip 처리    
 
-#### 클라우드 연동
+### 클라우드 연동
 ● AWS S3 저장: 파티셔닝 → 날짜 기반 저장    
 ● 모델은 S3 데이터를 기반으로 예측    
 ● S3 업로드 위치    
@@ -118,7 +118,7 @@ result/temperature/date=YYYY-MM/YYYY–MM-DD.csv
 result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 ```
 
-#### 데이터파이프라인 자동화 (Airflow)
+### 데이터파이프라인 자동화 (Airflow)
 ● DAG ID: weather_pipeline     
 ● 스케줄    
     - 매일 오전 4시 (KST 기준)    
@@ -134,27 +134,27 @@ result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 
 <br>
 
-### Modeling
-#### 환경 구성
+## Modeling
+### 환경 구성
 ● AWS EC2 클라우드 환경에서 mlops 모델링 개발    
 ● Ai stages gpu server에서 모델 학습     
 ● Docker: train, inference 환경을 통일하기 위해 사용    
 ● Docker-compose : airflow, mlflow 등 여러 container 기반 서비스 통합 관리    
 
-#### 모델 학습 및 배포    
+### 모델 학습 및 배포    
 ● lstm 기반 시계열 예측 모델 구현    
 ● FastAPI를 이용해 inference api 배포    
 
-#### Airflow 자동화
+### Airflow 자동화
 ● 모델 학습 -> 이상치 감지 -> 트리거 기반 재학습 자동화 구축    
 ● DAG를 통해 일관된 재학습 루틴 구축    
 
- #### MLflow
+ ### MLflow
 ● 실험별 성능 시각화 (batch size, model 종류에 따른 val loss)    
 ● 학습된 모델을 model registry에 등록    
 ● alias을 활용하여 모델 버전 관리    
 
-#### 모니터링
+### 모니터링
 ● slack과 연동하여 시간 모델 성능 모니터    
 mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙    
 ![mlflow1](https://i.imgur.com/71vggwp.jpeg)  
@@ -171,17 +171,17 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 
 <br>
 
-### API & Web Serving
-#### 사용한 모델:
+## API & Web Serving
+### 사용한 모델:
 ● FestAPI를 사용한 예측 API 제공      
 ● React를 활용한 사용자 페이지 구현    
 ● API 호출 예시 (기온 및 미세먼지 예측값 표시)    
 
-#### 배포 과정 :
+### 배포 과정 :
 ● 사전 학습된 모델을 fastAPI 서버에서로드하여 예측 요청을 받을 수 있는 API /result를 구성합니다.    
 ● 사용자 웹페이지(React)에서 이 API를 호출하여 매일 새벽에 자동으로저장된 예측 결과를 시각화합니다    
 
-#### 배치 서빙을 위한 Airflow 사용:
+### 배치 서빙을 위한 Airflow 사용:
 ● 모델 예측 자동화 : 매일 새벽 5시(KST 기준) Airflow DAG를 통해 S3에서 모델 다운로드 -> 예측 수행 -> 결과 저장 자동화    
 ● 입력 데이터 예측 및 저장 : 버킷에 저장된 최신 입력 데이터를 기반으로 기온 및 미세먼지 예측 결과를 .csv로 저장 -> 이후 FastAPI가 해당 결과를 읽어 사용자에게 제공    
 <br>
@@ -189,8 +189,8 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 
 <br>
 
-### 모니터링
-#### 성능 개선 변화 추이
+## 모니터링
+### 성능 개선 변화 추이
 ● Airflow DAG 실행 성공 여부, 로그 및 결과 파일 저장 상태 추적    
 ● FastAPI /result API 응답 상태 실시간 로그 모니터링    
 ● 예측 실패 시 빠르게 원인 파악(모델 미로드. 데이터 누락, 등)    
