@@ -116,9 +116,10 @@ result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 ● DAG ID: weather_pipeline     
 ● 스케줄    
     - 매일 오전 4시 (KST 기준)    
-    - 처리 결과 -> slack 알림    
 ![DAG](https://i.imgur.com/HxRSUr8.jpeg)
+    - 처리 결과 -> slack 알림    
 ![데이터파이프라인 슬랙 알림](https://i.imgur.com/wfESasB.jpeg)    
+<br>
 ● Task 흐름    
     1. load_temperature_data    
     2. load_pm10_data    
