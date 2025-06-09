@@ -151,12 +151,15 @@ result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 #### 모니터링
 ● slack과 연동하여 시간 모델 성능 모니터    
 <br>
+<br>
 mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙    
 ![https://i.imgur.com/71vggwp.jpeg](https://i.imgur.com/71vggwp.jpeg)
 ![https://i.imgur.com/2OeomSD.jpeg](https://i.imgur.com/2OeomSD.jpeg)
 <br>
+<br>
 airflow 기반 모델 재학습 자동화 파이프라인    
 ![https://i.imgur.com/Sf4UxCx.jpeg](https://i.imgur.com/Sf4UxCx.jpeg)
+<br>
 <br>
 Slack과 연동하여 실시간 모델 성능 모니터링
 ![https://i.imgur.com/kaFCMuH.jpeg](https://i.imgur.com/kaFCMuH.jpeg)
@@ -177,6 +180,7 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 #### 배치 서빙을 위한 Airflow 사용:
 ● 모델 예측 자동화 : 매일 새벽 5시(KST 기준) Airflow DAG를 통해 S3에서 모델 다운로드 -> 예측 수행 -> 결과 저장 자동화    
 ● 입력 데이터 예측 및 저장 : 버킷에 저장된 최신 입력 데이터를 기반으로 기온 및 미세먼지 예측 결과를 .csv로 저장 -> 이후 FastAPI가 해당 결과를 읽어 사용자에게 제공    
+<br>
 ![https://i.imgur.com/EXmhb8N.jpeg](https://i.imgur.com/EXmhb8N.jpeg)
 
 <br>
