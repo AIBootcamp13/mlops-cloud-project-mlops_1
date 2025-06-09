@@ -20,7 +20,7 @@
 
 ## 팀 구성원
 
-| ![박진일](https://avatars.githubusercontent.com/u/156163982?v=4) | ![이민우](https://avatars.githubusercontent.com/u/156163982?v=4) | ![조은별](https://avatars.githubusercontent.com/u/156163982?v=4) | ![조재형](https://avatars.githubusercontent.com/u/156163982?v=4) |
+| ![박진일]((https://github.com/user-attachments/assets/551cb3b6-c019-4e50-a35b-1843d3e474a3) | ![이민우](https://github.com/user-attachments/assets/b71c7815-e0c7-407f-b593-121e11c61d05) | ![조은별](https://github.com/user-attachments/assets/781faa65-c309-49ee-b58a-9cc08b13b69c) | ![조재형](https://github.com/user-attachments/assets/c7d4d78c-36ae-4fb1-bbd4-105ee9d722cc) |
 | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------: |
 |            [박진일](https://github.com/UpstageAILab)             |            [이민우](https://github.com/UpstageAILab)             |            [조은별](https://github.com/UpstageAILab)             |            [조재형](https://github.com/UpstageAILab)             |
 |                            팀장, PM               |                            모델링 파이프라인 자동화         |                            데이터 파이프라인 자동화                  |                            모델 서빙 자동화 및 배포                           |
@@ -40,7 +40,7 @@
 <br>
 
 ## 아키텍쳐 설계
-![기술스텍_아키텍처.jpg](attachment:ef02f979-cae7-40db-8c63-459f48ad309a:기술스텍_아키텍처.jpg)
+![기술스텍_아키텍처.jpg](https://imgur.com/a/qr5aok1)
 
 <br>
 
@@ -63,20 +63,20 @@
 <br>
 
 ## 사용 데이터셋 개요
-### 기상청 API 허브 (https://apihub.kma.go.kr/)
+기상청 API 허브 (https://apihub.kma.go.kr/)
 
-### 온도 데이터
+온도 데이터
     ● 이름: 종관기상관측(ASOS)
     ● 항목: 일별 평균기온, 최고기온, 최저기온
     ● 기간: 1907.10.01 ~ 현재
 
-### 미세먼지(PM10) 데이터
+미세먼지(PM10) 데이터
     ● 이름: 황사관측(PM10)
     ● 항목: 부유분진농도 (PM10)
     ● 기간: 2008.04.28 ~ 현재
     ● 생산주기: 5분 단위 수집 → 일 단위로 평균/최대/최소 집계 하여생성
 
-### 활용방식
+활용방식
     ● 각 날짜별로 서울 지역(108지점) 기온 및 미세먼지 정보를 수집
     ● API 응답 데이터를 바탕으로 CSV 가공 후 S3 업로드 자동화
 
@@ -111,14 +111,13 @@ M/YYYY-MM-DD.csv
 - 스케줄
     - 매일 오전 4시 (KST 기준)
     - 처리 결과 -> slack 알림
-![화면 캡처 2025-06-09 230545.jpg](attachment:cc7aa7be-dbaf-4105-9fa0-d6c26daedda8:화면_캡처_2025-06-09_230545.jpg)
-![화면 캡처 2025-06-09 232214.jpg](attachment:117adc75-016d-4b87-9d45-9a1c34a0f803:화면_캡처_2025-06-09_232214.jpg)
+![DAG](https://imgur.com/a/5ynSq1U)
+![데이터파이프라인 슬랙 알림](https://imgur.com/a/9D4rmE6)
 - Task 흐름
     1. load_temperature_data
     2. load_pm10_data
     3. run_eda_and_upload
-![화면 캡처 2025-06-09 230244.jpg](attachment:18f6b08d-3c21-42a3-b034-3a281a455689:화면_캡처_2025-06-09_230244.jpg)
-
+![데이터파이프라인 테스크g](https://imgur.com/a/xbz3tCa)
 
 ### Modeling
 - 환경 구성
@@ -168,3 +167,12 @@ Slack과 연동하여 실시간 모델 성능 모니터링
 ![화면 캡처 2025-06-09 231513.jpg](attachment:e2f71b02-2374-4f96-ab90-0e509717b544:화면_캡처_2025-06-09_231513.jpg)
 
 <br>
+
+### 모니터링
+성능 개선 변화 추이
+    - Airflow DAG 실행 성공 여부, 로그 및 결과 파일 저장 상태 추적
+    - FastAPI /result API 응답 상태 실시간 로그 모니터링
+    - 예측 실패 시 빠르게 원인 파악(모델 미로드. 데이터 누락, 등)
+    - 프론트에서 실시간 예측 결과 출력 및 오류 메세지 대응
+
+
