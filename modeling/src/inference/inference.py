@@ -4,11 +4,15 @@ import glob
 import torch
 import pandas as pd
 import numpy as np
+import mlflow
 
 from modeling.src.model.lstm import MultiOutputLSTM
 from modeling.src.utils.utils import get_outputs, get_scaler
 from modeling.src.utils.utils import CFG
 from modeling.src.utils.constant import Models
+# def inference(input_data):
+#     model = mlflow.pyfunc.load_model("runs:/model_id/model")
+#     return model.predict(input_data)
 
 def init_model(model_path, model_name, outputs):
     checkpoint = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
@@ -52,15 +56,12 @@ def run_inference_temperature(data_root_path, model_root_path, batch_size=64):
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_temperature)
     
-    model = init_model(model_path, 'multi_output_lstm', outputs_temperature)
+    model = mlflow.pytorch.load_model(model_uri=f"models:/temperature@production")
 
     fake_test_data = np.random.normal(loc=15, scale=3, size=(window_size, len(outputs_temperature)))
 
     results = inference(model, fake_test_data, scaler, outputs_temperature, device)    
-    # temperature_df = temperature_to_df(results, outputs)
-    # print(temperature_df)
 
-    # write_db(temperature_df, "mlops", "temperature")
     return results
 
 def run_inference_PM(data_root_path, model_root_path, batch_size=64):
@@ -79,20 +80,19 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_PM)
     
-    model = init_model(model_path, 'multi_output_lstm', outputs_PM)
-
+    model = mlflow.pytorch.load_model(model_uri=f"models:/pm10@production")
+    
     fake_test_data = np.random.normal(loc=15, scale=3, size=(window_size, len(outputs_PM)))
 
     results = inference(model, fake_test_data, scaler, outputs_PM, device)    
-    # temperature_df = temperature_to_df(results, outputs)
-    # print(temperature_df)
 
-    # write_db(temperature_df, "mlops", "temperature")
     return results
 
 
 def run_inference(data_root_path, model_root_path, batch_size):
-    
+    mlflow_url = os.getenv("MLFLOW_HOST")
+    mlflow.set_tracking_uri(mlflow_url)
+    mlflow.set_experiment("WeatherExperiment")
     temperature_results = run_inference_temperature(data_root_path, model_root_path, batch_size=batch_size)
     PM_results = run_inference_PM(data_root_path, model_root_path, batch_size=batch_size)
     return temperature_results, PM_results
