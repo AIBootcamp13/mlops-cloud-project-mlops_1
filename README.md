@@ -55,20 +55,79 @@
 # 프로젝트 구조
 ```
 ├── datapipeline
-│   ├── airflow/
-│   │   └── model_train.ipynb
-│   ├── src/
-│   └── main.py
+│ ├── airflow/
+│ │ ├── dags/
+│ │ │ ├── init_full_eda_dag.py # 전체 EDA 실행용 DAG (최초 수동 실행용)
+│ │ │ └── weather_pipeline_dag.py # 매일 자동 실행되는 주력 DAG
+│ │ └── utils/
+│ │ └── slack_notifier.py # Slack 알림 전송 모듈
+│ ├── src/
+│ │ ├── cloud/
+│ │ │ ├── s3_uploader.py # S3 업로드 모듈
+│ │ │ └── upload_script.py # 업로드 실행 스크립트
+│ │ ├── config/
+│ │ │ └── settings.py # 공통 환경 변수 설정
+│ │ ├── data_loaders/
+│ │ │ ├── pm10_loader.py # 미세먼지(PM10) 데이터 수집 모듈
+│ │ │ └── temp_loader.py # 기온(Temperature) 데이터 수집 모듈
+│ │ └── data_processors/
+│ │ └── eda_processor.py # EDA 및 전처리 수행 로직
+│ ├── Dockerfile # 도커 환경 정의 파일
+│ ├── upload_requirements.txt # 의존성 정의 파일
+│ └── main.py # 전체 로직 실행용 메인 스크립트
 │
 ├── modeling
-│   ├── pdf
-│   │   └── (Template) [패스트캠퍼스] Upstage AI Lab 1기_그룹 스터디 .pptx
-│   └── paper
+│ └── src/
+│ ├── airflow/
+│ │ ├── tasks/
+│ │ │ ├── inference.py # 추론 태스크
+│ │ │ ├── is_model_drift.py # 모델 드리프트 감지 태스크
+│ │ │ └── train.py # 학습 태스크
+│ │ ├── inference_dag.py # 추론용 DAG
+│ │ ├── lstm_airflow_dag.py # LSTM 예측용 DAG
+│ │ └── train_dag.py # 학습용 DAG
+│ ├── ct/
+│ │ └── airflow/
+│ │ ├── dags/
+│ │ │ ├── tasks/
+│ │ │ │ ├── inference.py
+│ │ │ │ ├── is_model_drift.py
+│ │ │ │ └── train.py
+│ │ │ ├── inference_dag.py
+│ │ │ ├── train_dag.py
+│ │ │ └── tutorial_dag.py
+│ │ └── docker-compose.yaml # Airflow 테스트용 도커 설정
+│ ├── dags/
+│ │ ├── hello_airflow_dag.py # 테스트용 DAG
+│ │ ├── lstm_airflow_dag.py
+│ │ └── ml_development.py # ML 개발용 DAG
+│ ├── inference/
+│ │ └── inference.py # 추론 스크립트
+│ ├── mlflow/
+│ │ ├── study/ # 실험 로그 폴더
+│ │ └── main.py # MLflow 실행 파일
+│ ├── model/
+│ │ └── lstm.py # LSTM 모델 정의
+│ ├── postprocess/
+│ │ └── postprocess.py # 예측 결과 후처리
+│ ├── train/
+│ │ └── train.py # 학습 스크립트
+│ ├── trainer/
+│ │ ├── airflowTrainer.py # Airflow 전용 학습기
+│ │ ├── baselineTrainer.py # 베이스라인 학습기
+│ │ └── trainer.py # 공통 학습기
+│ └── utils/
+│   ├── constant.py # 상수 모듈
+│   └── utils.py # 공통 유틸 함수
 │
-└── serving
-    └── data
-        ├── eval
-        └── train
+├── serving
+│    ├── data
+│    │   ├── eval
+│    │   └── train
+│
+├── docker-compose.yml
+├──
+└── requirement.txt
 ```
 
 <br>
