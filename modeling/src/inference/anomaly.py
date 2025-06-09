@@ -16,6 +16,7 @@ from sklearn.model_selection import train_test_split
 
 from modeling.src.utils.utils import get_output_temperature, get_output_pm10
 from modeling.src.utils.aws import download_data_from_s3
+from modeling.src.utils.utils import message_to_slack
 
 def is_model_drift(project_path, model_name):
     data_root_path = os.path.join(project_path, 'data')
@@ -29,6 +30,8 @@ def is_model_drift(project_path, model_name):
 
     df = pd.read_csv(latest_anomalies_file)
 
+    if len(df) > DRIFT_THRESHOLD:
+        message_to_slack(f"이상치 탐지 결과 {len(df)} 개 발생 하여 재학습!")
     return len(df) > DRIFT_THRESHOLD
 
 def inference(project_path, data_name, model_name):

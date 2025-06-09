@@ -10,9 +10,6 @@ from modeling.src.model.lstm import MultiOutputLSTM
 from modeling.src.utils.utils import get_outputs, get_scaler
 from modeling.src.utils.utils import CFG
 from modeling.src.utils.constant import Models
-# def inference(input_data):
-#     model = mlflow.pyfunc.load_model("runs:/model_id/model")
-#     return model.predict(input_data)
 
 def init_model(model_path, model_name, outputs):
     checkpoint = torch.load(model_path, map_location=torch.device('cpu'), weights_only=True)
@@ -51,7 +48,6 @@ def run_inference_temperature(data_root_path, model_root_path, batch_size=64):
     latest_anomalies_file = files[-1]
 
     data_path = os.path.join(data_root_path, latest_anomalies_file)
-    model_path = os.path.join(model_root_path, 'lstm_temperature.pth')
 
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_temperature)
@@ -75,7 +71,6 @@ def run_inference_PM(data_root_path, model_root_path, batch_size=64):
     latest_anomalies_file = files[-1]
 
     data_path = os.path.join(data_root_path, latest_anomalies_file)
-    model_path = os.path.join(model_root_path, 'lstm_pm10.pth')
 
     outputs_temperature, outputs_PM = get_outputs()
     scaler = get_scaler(data_path, outputs_PM)
