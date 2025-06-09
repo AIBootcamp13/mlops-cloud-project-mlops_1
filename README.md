@@ -150,18 +150,16 @@ result/pm10/data=YYYY-MM/YYYY-MM-DD.csv
 
 #### 모니터링
 ● slack과 연동하여 시간 모델 성능 모니터    
-<br>
-
-- mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙    
+mlflow 를 이용한 모델 관리 및 fastapi 를 이용해 api 서빙    
 ![mlflow1](https://i.imgur.com/71vggwp.jpeg)  
 ![mlflow2](https://i.imgur.com/2OeomSD.jpeg)  
-<br><br>
+<br>
 
-- airflow 기반 모델 재학습 자동화 파이프라인    
+airflow 기반 모델 재학습 자동화 파이프라인    
 ![airflow](https://i.imgur.com/Sf4UxCx.jpeg)  
-<br><br>
+<br>
 
-- Slack과 연동하여 실시간 모델 성능 모니터링  
+Slack과 연동하여 실시간 모델 성능 모니터링  
 ![slack1](https://i.imgur.com/kaFCMuH.jpeg)  
 ![slack2](https://i.imgur.com/u2ZhV60.jpeg)
 
