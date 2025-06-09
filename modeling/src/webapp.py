@@ -1,4 +1,5 @@
 import os
+import glob
 import sys
 
 sys.path.append(
@@ -7,9 +8,16 @@ sys.path.append(
 from dotenv import load_dotenv
 load_dotenv()
 
+import mlflow
+import torch
+import numpy as np
 from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
-from modeling.src.utils.utils import project_path
+from modeling.src.utils.utils import get_outputs, get_scaler, project_path
+from modeling.src.utils.utils import CFG
+from modeling.src.inference.inference import inference
 
 app = FastAPI()
 
@@ -39,6 +47,8 @@ async def predict_pm10(request: Request):
 
     model = mlflow.pytorch.load_model(model_uri="models:/pm10@production")
 
-    results = inference(model, request_json["input_data"], scaler, outputs_PM, device)
+    fake_test_data = np.random.normal(loc=15, scale=3, size=(CFG['WINDOW_SIZE'], len(outputs_PM)))
+
+    results = inference(model, fake_test_data, scaler, outputs_PM, device)
 
     return {"prediction": results.tolist()}
