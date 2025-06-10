@@ -1,0 +1,87 @@
+name: mlops
+
+x-common: &common
+  env_file:
+    - .env
+  image: mlops-core:latest
+
+x-airflow-common: &airflow_common
+  environment:
+    - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////app/modeling/src/airflow/airflow.db
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+
+    - AIRFLOW__CORE__STORE_SERIALIZED_DAGS=True
+    - AIRFLOW__CORE__STORE_DAG_CODE=True
+    - AIRFLOW__CORE__DAGS_FOLDER=/app/modeling/src/airflow
+
+    - AIRFLOW__WEBSERVER__SECRET_KEY=${AIRFLOW_WEB_SECRET_KEY}
+  env_file:
+    - .env
+  volumes:
+    - ./:/app
+  working_dir: /app/modeling/src/airflow
+  image: mlops-core:latest
+
+services:
+  # train-inference-tester:
+  #   <<: *common
+  #   container_name: lmw-train-inference-tester
+  #   volumes:
+  #     - ./:/app
+  #   working_dir: /app
+  #   command: bash -c "python modeling/src/main.py --run_mode train && python modeling/src/main.py --run_mode inference"
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+
+  mlflow-web:
+    <<: *common
+    container_name: lmw-mlflow-web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: mlflow ui --host 0.0.0.0 --port 5000
+    restart: unless-stopped
+  
+  # mlflow-tester:
+  #   <<: *common
+  #   container_name: lmw-mlflow-tester
+  #   depends_on:
+  #     - mlflow-web
+  #   volumes:
+  #     - ./:/app
+  #   working_dir: /app
+  #   command: python modeling/src/main.py --run_mode mlflow-tester
+
+  airflow-init:
+    <<: *airflow_common
+    container_name: lmw-airflow-init
+    command: >
+      bash -c "
+        airflow db reset -y &&
+        airflow db init &&
+        airflow users create --username admin --firstname mlops --lastname project --role Admin --email admin@mlops.co.kr --password admin
+      "
+    restart: "no"
+
+  airflow-web:
+    <<: *airflow_common
+    container_name: lmw-airflow-web
+    ports:
+     - "8080:8080"
+    command: airflow webserver --host 0.0.0.0 --port 8080
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow_common
+    container_name: lmw-airflow-scheduler
+    command: airflow scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+

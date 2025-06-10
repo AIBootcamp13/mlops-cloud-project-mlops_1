@@ -162,6 +162,15 @@ airflow.cfg
 airflow.db
 logs/
 
+# MLflow artifacts and runs
+mlartifacts/
+mlruns/
+models/
+data/
+modeling/src/ct/airflow/config/
+modeling/src/ct/airflow/logs/
+*.db
+
 # VSCode 설정
 .vscode/
 
@@ -172,5 +181,4 @@ docker-compose.override.yml
 
 # 기타 파생 파일
 *.pyc
-
 *.pem
