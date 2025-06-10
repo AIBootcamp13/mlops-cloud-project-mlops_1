@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    env_file:
+      - ./datapipeline/.env
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+      TZ: UTC  # 변경
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      retries: 5
+    networks:
+      - airflow
+
+  airflow-init:
+    image: apache/airflow:2.8.1-python3.10
+    container_name: airflow-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./datapipeline/.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: fSeUZFAfppcAJ9nHjCXvcOmmtnsg8Vami0/j4wR9
+      PYTHONPATH: /opt/airflow:/opt/airflow/utils:/opt/airflow/src
+      TZ: UTC
+    volumes:
+      - ./datapipeline/airflow/dags:/opt/airflow/dags
+      - ./datapipeline/airflow/utils:/opt/airflow/utils
+      - ./datapipeline/src:/opt/airflow/src
+      - ./datapipeline:/opt/airflow/datapipeline
+    command: >
+      bash -c "airflow db init && airflow users create --username admin --password admin --firstname admin --lastname admin --role Admin --email admin@example.com"
+    networks:
+      - airflow
+
+  airflow-webserver:
+    image: apache/airflow:2.8.1-python3.10
+    container_name: airflow-webserver
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./datapipeline/.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: fSeUZFAfppcAJ9nHjCXvcOmmtnsg8Vami0/j4wR9
+      PYTHONPATH: /opt/airflow:/opt/airflow/utils:/opt/airflow/src
+      TZ: UTC
+    volumes:
+      - ./datapipeline/airflow/dags:/opt/airflow/dags
+      - ./datapipeline/airflow/utils:/opt/airflow/utils
+      - ./datapipeline/src:/opt/airflow/src
+      - ./datapipeline:/opt/airflow/datapipeline
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      bash -c "airflow webserver"
+    restart: always
+    networks:
+      - airflow
+
+  airflow-scheduler:
+    image: apache/airflow:2.8.1-python3.10
+    container_name: airflow-scheduler
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./datapipeline/.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__WEBSERVER__SECRET_KEY: fSeUZFAfppcAJ9nHjCXvcOmmtnsg8Vami0/j4wR9
+      PYTHONPATH: /opt/airflow:/opt/airflow/utils:/opt/airflow/src
+      TZ: UTC 
+    volumes:
+      - ./datapipeline/airflow/dags:/opt/airflow/dags
+      - ./datapipeline/airflow/utils:/opt/airflow/utils
+      - ./datapipeline/src:/opt/airflow/src
+      - ./datapipeline:/opt/airflow/datapipeline
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: >
+      bash -c "airflow scheduler"
+    restart: always
+    networks:
+      - airflow
+
+volumes:
+  postgres-db-volume:
+
+networks:
+  airflow:

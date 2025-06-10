@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/src"
+    ],
+    "python.linting.enabled": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.useLibraryCodeForTypes": true
+}
