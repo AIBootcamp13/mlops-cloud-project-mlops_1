@@ -9,12 +9,14 @@ PM10_MAX_THRESHOLD = 160.5
 
 def preprocess_temperature(df_ta, days=None, reference_date=None):
     if reference_date is None:
-        reference_date = pd.to_datetime(date.today())
+        # 어제 날짜를 기준으로 설정 (데이터 로더와 일관성 유지)
+        reference_date = pd.to_datetime(date.today() - timedelta(days=1))
     if days:
         start_date = reference_date - timedelta(days=days)
         df_ta = df_ta[(df_ta['date'] <= reference_date) & (df_ta['date'] >= start_date)]
     df_ta = df_ta.replace(-99.0, np.nan)
     df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']] = df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']].astype('float32')
+    df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']] = df_ta[['TA_AVG', 'TA_MAX', 'TA_MIN']].round(1)
     return df_ta
 
 def interpolate_temperature(df_ta):
@@ -22,7 +24,8 @@ def interpolate_temperature(df_ta):
 
 def preprocess_pm10(df_pm10, days=None, reference_date=None):
     if reference_date is None:
-        reference_date = pd.to_datetime(date.today())
+        # 어제 날짜를 기준으로 설정 (데이터 로더와 일관성 유지)
+        reference_date = pd.to_datetime(date.today() - timedelta(days=1))
     if days:
         start_date = reference_date - timedelta(days=days)
         df_pm10 = df_pm10[(df_pm10['date'] <= reference_date) & (df_pm10['date'] >= start_date)]
@@ -40,11 +43,13 @@ def process_pm10_outliers(df_pm10):
     df_pm10_filtered[['PM10_MIN', 'PM10_MAX', 'PM10_AVG']] = df_pm10_filtered[
         ['PM10_MIN', 'PM10_MAX', 'PM10_AVG']
     ].astype('float32')
+    df_pm10_filtered[['PM10_MIN', 'PM10_MAX', 'PM10_AVG']] = df_pm10_filtered[['PM10_MIN', 'PM10_MAX', 'PM10_AVG']].round(1)
     return df_pm10_filtered
 
 def run_eda_for_recent_days(df_ta, df_pm10, days=14, reference_date=None):
     if reference_date is None:
-        reference_date = pd.to_datetime(date.today())
+        # 어제 날짜를 기준으로 설정 (데이터 로더와 일관성 유지)
+        reference_date = pd.to_datetime(date.today() - timedelta(days=1))
     df_ta_interp = interpolate_temperature(preprocess_temperature(df_ta, days, reference_date))
     df_pm10_filtered = process_pm10_outliers(preprocess_pm10(df_pm10, days, reference_date))
     return df_ta_interp, df_pm10_filtered

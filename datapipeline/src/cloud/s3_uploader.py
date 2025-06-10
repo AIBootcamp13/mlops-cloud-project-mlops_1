@@ -2,10 +2,10 @@ import os
 import io
 import boto3
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 from botocore.exceptions import ClientError
 from src.data_processors.eda_processor import run_eda_for_recent_days
-from src.data_processors.eda_processor import run_eda_for_recent_days_with_fetch
 
 # 환경 변수 로드
 load_dotenv()
@@ -36,24 +36,36 @@ def upload_df_to_s3(df: pd.DataFrame, s3_prefix: str, date_col: str = 'date'):
         year_month = pd.to_datetime(date).strftime('%Y-%m')
 
         single_df = pd.DataFrame([row])
-        csv_buffer = io.StringIO()
-        single_df.to_csv(csv_buffer, index=False)
 
+        # 소수점 한 자리로 반올림
+        numeric_cols = single_df.select_dtypes(include=[np.number]).columns
+        single_df[numeric_cols] = single_df[numeric_cols].round(1)
+
+        # S3 저장 키 설정
         s3_key = f"{s3_prefix}/date={year_month}/{date_str}.csv"
 
+        # 중복 확인 후 업로드
         try:
-            # 중복 여부 확인
             try:
                 obj = s3.get_object(Bucket=S3_BUCKET, Key=s3_key)
                 df_existing = pd.read_csv(io.BytesIO(obj['Body'].read()))
+
+                # 컬럼 순서 정렬 및 인덱스 제거 후 비교
+                df_existing = df_existing.sort_index(axis=1).reset_index(drop=True)
+                single_df = single_df.sort_index(axis=1).reset_index(drop=True)
+
                 if df_existing.equals(single_df):
                     skipped += 1
                     continue
+
             except ClientError as e:
                 if e.response['Error']['Code'] != 'NoSuchKey':
                     raise
 
             # 업로드 실행
+            csv_buffer = io.StringIO()
+            single_df.to_csv(csv_buffer, index=False, float_format='%.1f', columns=single_df.columns)
+
             s3.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=csv_buffer.getvalue())
             uploaded += 1
 
@@ -69,17 +81,12 @@ def upload_df_to_s3(df: pd.DataFrame, s3_prefix: str, date_col: str = 'date'):
         for f, msg in failed:
             print(f"  - {f}: {msg}")
 
-# 온도/미세먼지 DataFrame 두 개를 각각 업로드
+# 실제 업로드 실행
 def upload_processed_data_to_s3(df_temp: pd.DataFrame, df_pm10: pd.DataFrame):
     upload_df_to_s3(df_temp, s3_prefix="results/temperature", date_col='date')
     upload_df_to_s3(df_pm10, s3_prefix="results/pm10", date_col='date')
 
-# 외부에서 DF 받으면 EDA → S3 업로드
+# 전체 EDA + 업로드 실행
 def upload_to_s3(df_ta: pd.DataFrame, df_pm10: pd.DataFrame):
     df_temp, df_pm10 = run_eda_for_recent_days(df_ta, df_pm10)
-    upload_processed_data_to_s3(df_temp, df_pm10)
-
-# 내부에서 전처리 + EDA → S3 업로드    
-def upload_to_s3_for_recent_days(days=14, reference_date=None):
-    df_temp, df_pm10 = run_eda_for_recent_days_with_fetch(days, reference_date)
     upload_processed_data_to_s3(df_temp, df_pm10)
